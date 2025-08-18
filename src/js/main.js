@@ -9,7 +9,7 @@ import { renderHistory, addToHistory } from './history.js';
 import { TemplatesUI } from './components/TemplatesUI.js';
 import { defaultTemplates } from './config/defaultTemplates.js';
 import { db } from './utils/db.js';
-import { setupSearchListeners } from './search-handlers.js';
+import { setupSearch } from './search-handler.js';
 import { renderOptions } from './options.js';
 import { renderPreview } from './preview.js';
 import { handleSearch, handleCopy } from './search.js';
