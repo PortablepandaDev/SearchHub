@@ -9,6 +9,7 @@ import { renderHistory, addToHistory } from './history.js';
 import { TemplatesUI } from './components/TemplatesUI.js';
 import { defaultTemplates } from './config/defaultTemplates.js';
 import { db } from './utils/db.js';
+import { setupSearchListeners } from './search-handlers.js';
 import { renderOptions } from './options.js';
 import { renderPreview } from './preview.js';
 import { handleSearch, handleCopy } from './search.js';
@@ -298,56 +299,78 @@ async function init() {
       });
     }
     
+    // Debounce function
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
     // Handler for search operations
-    const performSearch = async (triggerSource) => {
-      console.log('Search triggered from:', triggerSource);
-      if (!dom.searchQuery?.value) {
-        showToast('Please enter a search query', 'error');
-        return;
-      }
+    const performSearch = debounce(async (triggerSource) => {
+      try {
+        console.log('Search triggered from:', triggerSource);
+        
+        // Validate query
+        if (!dom.searchQuery?.value) {
+          showToast('Please enter a search query', 'error');
+          return;
+        }
 
-      // Guard against rapid repeated triggers of the same search
-      const searchKey = `${dom.searchQuery.value}_${state.selectedEngines.join(',')}`;
-      const now = Date.now();
-      if (state.lastSearchKey === searchKey && state.lastSearchTime && (now - state.lastSearchTime) < 1000) {
-        console.log('Search prevented - duplicate search detected');
-        return;
-      }
-      state.lastSearchKey = searchKey;
-      state.lastSearchTime = now;
+        // Check if already searching
+        if (state.isSearching) {
+          console.log('Search prevented - already searching');
+          return;
+        }
 
-      if (state.isSearching) {
-        console.log('Search prevented - already searching');
-        return;
-      }
-      
-      dom.searchButton.disabled = true;
-      state.isSearching = true;
+        // Disable search button and set searching state
+        dom.searchButton.disabled = true;
+        state.isSearching = true;
       try {
         const results = await handleSearch(state, dom, buildQueryString, addToHistory, showToast);
         if (results?.success) {
           showToast('Search started successfully', 'success');
         }
+      } catch (error) {
+        console.error('Search failed:', error);
+        showToast('Search failed. Please try again.', 'error');
       } finally {
-        state.isSearching = false;
-        dom.searchButton.disabled = false;
-        // Allow the next different search immediately, but prevent duplicates for 1 second
+        // Reset search state after a short delay to prevent rapid re-triggering
         setTimeout(() => {
-          if (state.lastSearchKey === searchKey) {
-            state.lastSearchKey = null;
-            state.lastSearchTime = 0;
-          }
-        }, 1000);
+          state.isSearching = false;
+          dom.searchButton.disabled = false;
+        }, 500);
       }
+    };
+
+    // Set up unified search handler
+    const handleSearchTrigger = (event, source) => {
+      // Prevent the default form submission
+      event.preventDefault();
+      // Call the debounced search function
+      performSearch(source);
     };
 
     // Set up search button click handler
     if (dom.searchButton) {
-      dom.searchButton.addEventListener('click', () => performSearch('search-button'));
+      dom.searchButton.addEventListener('click', (e) => handleSearchTrigger(e, 'search-button'));
     }
+
+    // Set up enter key handler on the search form
+    const searchForm = dom.searchQuery?.closest('form');
+    if (searchForm) {
+      searchForm.addEventListener('submit', (e) => handleSearchTrigger(e, 'enter-key'));
+    }
+
     // Set up run preview button click handler
     if (dom.runPreviewBtn) {
-      dom.runPreviewBtn.addEventListener('click', () => performSearch('preview-button'));
+      dom.runPreviewBtn.addEventListener('click', (e) => handleSearchTrigger(e, 'preview-button'));
     }
 
     // Register other event listeners
