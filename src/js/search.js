@@ -1,5 +1,6 @@
 import { searchEngines } from './engines.js';
 import { withDateFilter } from './query.js';
+import { ENGINE, buildURL } from './engineMap.js';
 
 // Search and copy logic
 export function handleSearch(state, dom, buildQueryString, addToHistory, showToast) {
@@ -63,21 +64,18 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
     // Track opened URLs for returning
     const urls = [];
 
-    // Open each engine in a new tab
-    engines.forEach((engineKey, idx) => {
+    // Open each engine in a new tab using ENGINE/buildURL
+  engines.forEach((engineKey, idx) => {
       setTimeout(() => {
-        const engine = searchEngines[engineKey];
-        if (!engine) {
+        if (!ENGINE[engineKey]) {
           console.error(`Engine ${engineKey} not found`);
           return;
         }
-
         try {
-          // Centralized date filter
           const after = dom.afterDateInput?.value || '';
           const before = dom.beforeDateInput?.value || '';
-          const { query: filteredQuery, extraQueryString } = withDateFilter(engineKey, query, after, before);
-          const url = engine.url + encodeURIComponent(filteredQuery) + (extraQueryString || '');
+          const filteredQuery = buildQueryString(state, dom); // Already adapted for engine
+          const url = buildURL(engineKey, filteredQuery, after, before);
           window.open(url, '_blank', 'noopener,noreferrer');
           urls.push(url);
 
@@ -95,8 +93,8 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
             showToast && showToast('Search started!', 'success');
           }
         } catch (err) {
-          console.error('Failed to open URL:', err);
           showToast && showToast('Failed to open search', 'error');
+          console.error('Failed to open URL:', err);
         }
       }, idx * 350);
     });
@@ -105,6 +103,7 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
   } catch (error) {
     console.error('Search failed:', error);
     showToast && showToast('Search failed', 'error');
+
     return { success: false, error: error.message };
   }
 }
