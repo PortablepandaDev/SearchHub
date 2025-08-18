@@ -8,11 +8,29 @@ export const searchEngines = {
     icon: "google",
     description: "General web search"
   },
-  duckduckgo: { 
-    name: "DuckDuckGo", 
-    url: "https://duckduckgo.com/?q=",
-    icon: "duckduckgo",
-    description: "Privacy-focused search engine"
+  scholar: {
+    name: "Google Scholar",
+    url: "https://scholar.google.com/scholar?q=",
+    icon: "scholar",
+    description: "Academic papers search"
+  },
+  arxiv: {
+    name: "arXiv",
+    url: "https://arxiv.org/search/?query=",
+    icon: "arxiv",
+    description: "Scientific papers archive"
+  },
+  pubmed: {
+    name: "PubMed",
+    url: "https://pubmed.ncbi.nlm.nih.gov/?term=",
+    icon: "pubmed",
+    description: "Medical research papers"
+  },
+  stackoverflow: {
+    name: "Stack Overflow",
+    url: "https://stackoverflow.com/search?q=",
+    icon: "stackoverflow",
+    description: "Developer Q&A"
   },
   github: {
     name: "GitHub",
@@ -20,11 +38,35 @@ export const searchEngines = {
     icon: "github",
     description: "Search code repositories"
   },
-  stackoverflow: {
-    name: "Stack Overflow",
-    url: "https://stackoverflow.com/search?q=",
-    icon: "stackoverflow",
-    description: "Developer Q&A"
+  npm: {
+    name: "NPM",
+    url: "https://www.npmjs.com/search?q=",
+    icon: "npm",
+    description: "Node.js packages"
+  },
+  pypi: {
+    name: "PyPI",
+    url: "https://pypi.org/search/?q=",
+    icon: "pypi",
+    description: "Python packages"
+  },
+  mdn: {
+    name: "MDN",
+    url: "https://developer.mozilla.org/search?q=",
+    icon: "mdn",
+    description: "Web documentation"
+  },
+  youtube: {
+    name: "YouTube",
+    url: "https://www.youtube.com/results?search_query=",
+    icon: "youtube",
+    description: "Video search"
+  },
+  duckduckgo: { 
+    name: "DuckDuckGo", 
+    url: "https://duckduckgo.com/?q=",
+    icon: "duckduckgo",
+    description: "Privacy-focused search"
   },
   bing: { 
     name: "Bing", 

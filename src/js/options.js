@@ -6,7 +6,13 @@ export function renderOptions(key, state, dom, buildQueryString, renderPreview, 
   if (state.isSafeMode && category.isSafe === false) {
     dom.optionsTitle.textContent = `2. Options for ${category.name}`;
     dom.optionsDescription.textContent = category.description;
-    dom.optionsContainer.innerHTML = '<p class="text-yellow-400">This category is hidden in Safe Mode for your protection.</p>';
+    dom.optionsContainer.innerHTML = `
+      <div class="flex items-center gap-2 text-yellow-400 text-xs">
+        <span class="inline-block w-2 h-2 bg-yellow-400 rounded-full"></span>
+        <span>Category hidden by Safe Mode</span>
+      </div>
+      <p class="mt-2 text-yellow-400">This category is hidden in Safe Mode for your protection.</p>
+    `;
     return;
   }
   dom.optionsTitle.textContent = `2. Options for ${category.name}`;

@@ -17,6 +17,7 @@ import { DorkLibrary } from './components/DorkLibrary.js';
 import { QuerySuggester } from './components/QuerySuggester.js';
 import { GitHubSearch } from './components/GitHubSearch.js';
 import { ResultPreviewer } from './components/ResultPreviewer.js';
+import { SearchEngine } from './components/SearchEngine.js';
 
 // DOM references
 const dom = {
@@ -159,12 +160,8 @@ async function init() {
   }
   
   try {
-    // Initialize base features with proper error handling
-    renderEngines(state, dom, 
-      () => {}, 
-      () => updateSearchBtnLabel(), 
-      () => renderPreview(state, dom, buildQueryString)
-    );
+    // Initialize SearchEngine component which handles all engine rendering and selection
+    const searchEngineComponent = new SearchEngine(state);
 
     renderCategories(
       state, dom, {},
@@ -214,23 +211,36 @@ async function init() {
       });
     }
     
-    // Register core event listeners
-    registerEventListeners(state, dom, {
-      handleSearch: async () => {
-        if (!dom.searchQuery?.value) {
-          showToast('Please enter a search query', 'error');
-          return;
-        }
+    // Handler for search operations
+    const performSearch = async () => {
+      if (!dom.searchQuery?.value) {
+        showToast('Please enter a search query', 'error');
+        return;
+      }
+      dom.searchButton.disabled = true;
+      state.isSearching = true;
+      try {
         const results = await handleSearch(state, dom, buildQueryString, addToHistory, showToast);
         if (results?.success) {
           showToast('Search started successfully', 'success');
         }
-      },
+      } finally {
+        state.isSearching = false;
+        dom.searchButton.disabled = false;
+      }
+    };
+
+    // Register core event listeners
+    registerEventListeners(state, dom, {
+      handleSearch: performSearch,
       handleCopy: () => handleCopy(state, dom, buildQueryString, showToast),
       handlePreview: () => renderPreview(state, dom, buildQueryString),
       saveTemplate: () => saveTemplate(state, dom, getCurrentConfig, renderTemplates, showToast),
       deleteTemplate: () => deleteTemplate(state, dom, renderTemplates, showToast),
     });
+
+    // Listen for search events from components
+    window.addEventListener('search', performSearch);
 
     // Update initial button states
     updateSearchBtnLabel();
@@ -249,6 +259,16 @@ async function init() {
         if (e.key === 'Enter' && !e.shiftKey) {
           handleSearch(state, dom, buildQueryString, addToHistory, showToast);
         }
+      });
+    }
+
+    // Add clear dates button logic
+    const clearDatesBtn = document.getElementById('clearDatesBtn');
+    if (clearDatesBtn && dom.afterDateInput && dom.beforeDateInput) {
+      clearDatesBtn.addEventListener('click', () => {
+        dom.afterDateInput.value = '';
+        dom.beforeDateInput.value = '';
+        renderPreviewWithQuery();
       });
     }
 

@@ -65,21 +65,30 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
     const urls = [];
 
     // Open each engine in a new tab using ENGINE/buildURL
-  engines.forEach((engineKey, idx) => {
+  const promises = engines.map((engineKey, idx) => 
+    new Promise((resolve, reject) => {
       setTimeout(() => {
         if (!ENGINE[engineKey]) {
           console.error(`Engine ${engineKey} not found`);
+          reject(new Error(`Engine ${engineKey} not found`));
           return;
         }
+        
         try {
           const after = dom.afterDateInput?.value || '';
           const before = dom.beforeDateInput?.value || '';
-          const filteredQuery = buildQueryString(state, dom); // Already adapted for engine
+          const filteredQuery = buildQueryString(state, dom);
           const url = buildURL(engineKey, filteredQuery, after, before);
-          window.open(url, '_blank', 'noopener,noreferrer');
+          const opened = window.open(url, '_blank', 'noopener,noreferrer');
+          
+          if (!opened) {
+            reject(new Error('Popup blocked'));
+            return;
+          }
+
           urls.push(url);
 
-          // Only add the first to history for cleanliness
+          // Only add the first to history
           if (addToHistory && engineKey === engines[0]) {
             addToHistory(
               { query: filteredQuery, url, date: new Date().toISOString() },
@@ -88,16 +97,27 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
             );
           }
 
-          // Show success for first engine
-          if (idx === 0) {
-            showToast && showToast('Search started!', 'success');
-          }
+          resolve(url);
         } catch (err) {
-          showToast && showToast('Failed to open search', 'error');
-          console.error('Failed to open URL:', err);
+          reject(err);
         }
-      }, idx * 350);
-    });
+      }, idx * 300); // 300ms delay between tabs
+    })
+  );
+
+  // Wait for all engines to open
+  Promise.allSettled(promises).then(results => {
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    
+    if (successful === 0) {
+      showToast && showToast('Failed to open searches. Please check popup blocker.', 'error');
+    } else if (failed > 0) {
+      showToast && showToast(`Opened ${successful} of ${engines.length} searches. Some were blocked.`, 'warning');
+    } else {
+      showToast && showToast('Search started!', 'success');
+    }
+  });
 
     return { success: true, urls };
   } catch (error) {
