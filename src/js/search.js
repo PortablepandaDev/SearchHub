@@ -1,4 +1,6 @@
 import { searchEngines } from './engines.js';
+import { withDateFilter } from './query.js';
+
 // Search and copy logic
 export function handleSearch(state, dom, buildQueryString, addToHistory, showToast) {
   try {
@@ -61,21 +63,25 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
     // Open each engine in a new tab
     engines.forEach((engineKey, idx) => {
       setTimeout(() => {
-        const engine = searchEngines[engineKey]; // Use imported searchEngines
+        const engine = searchEngines[engineKey];
         if (!engine) {
           console.error(`Engine ${engineKey} not found`);
           return;
         }
 
         try {
-          const url = engine.url + encodeURIComponent(query);
+          // Centralized date filter
+          const after = dom.afterDateInput?.value || '';
+          const before = dom.beforeDateInput?.value || '';
+          const { query: filteredQuery, extraQueryString } = withDateFilter(engineKey, query, after, before);
+          const url = engine.url + encodeURIComponent(filteredQuery) + (extraQueryString || '');
           window.open(url, '_blank', 'noopener,noreferrer');
           urls.push(url);
 
           // Only add the first to history for cleanliness
           if (addToHistory && engineKey === engines[0]) {
             addToHistory(
-              { query, url, date: new Date().toISOString() },
+              { query: filteredQuery, url, date: new Date().toISOString() },
               state,
               () => {}
             );
@@ -89,7 +95,7 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
           console.error('Failed to open URL:', err);
           showToast && showToast('Failed to open search', 'error');
         }
-      }, idx * 350); // 350ms delay between tabs
+      }, idx * 350);
     });
 
     return { success: true, urls };

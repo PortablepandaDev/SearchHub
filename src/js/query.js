@@ -1,3 +1,30 @@
+// Centralized date filter logic
+export function withDateFilter(engine, query, after, before) {
+  if (!after && !before) return { query, extraQueryString: '' };
+  if (engine === 'google') {
+    const mmdd = s => new Date(s).toLocaleDateString('en-US');
+    const tbs = `&tbs=cdr:1${after ? `,cd_min:${mmdd(after)}` : ''}${before ? `,cd_max:${mmdd(before)}` : ''}`;
+    return { query, extraQueryString: tbs };
+  }
+  if (engine === 'bing') {
+    // Bing has no reliable after: operator; prefer UI filter.
+    return { query, extraQueryString: '' };
+  }
+  return { query, extraQueryString: '' };
+}
+
+// Subdomain builder
+export function subdomainQuery(domain) {
+  const d = domain.replace(/^https?:\/\//, '').replace(/\/.*/, '');
+  return `site:*.${d}`;
+}
+
+// Improved decorateQuery: only quote includes if wrapPhrases is true
+export function decorateQuery(base, includes, excludes, wrapPhrases) {
+  const inc = includes.map(t => wrapPhrases ? `"${t}"` : t);
+  const exc = excludes.map(t => `-${t}`);
+  return [base, ...inc, ...exc].filter(Boolean).join(' ').trim();
+}
 // Query string builder and decorators
 export function sanitizeQueryTerm(term) {
   // Remove extra quotes and escaping
@@ -7,20 +34,11 @@ export function sanitizeQueryTerm(term) {
 }
 
 export function decorateQueryWithTerms(base, includes = [], excludes = [], wrap = false) {
-  // Clean and prepare terms
+  // Use new decorateQuery logic
   const baseQuery = sanitizeQueryTerm(base);
-  const includeTerms = includes.map(term => {
-    const cleaned = sanitizeQueryTerm(term);
-    return wrap ? `"${cleaned}"` : cleaned;
-  });
-  const excludeTerms = excludes.map(term => `-${sanitizeQueryTerm(term)}`);
-
-  // Build query with proper spacing
-  return [
-    baseQuery,
-    ...includeTerms,
-    ...excludeTerms
-  ].filter(Boolean).join(' ').trim();
+  const inc = includes.map(term => wrap ? `"${sanitizeQueryTerm(term)}"` : sanitizeQueryTerm(term));
+  const exc = excludes.map(term => `-${sanitizeQueryTerm(term)}`);
+  return [baseQuery, ...inc, ...exc].filter(Boolean).join(' ').trim();
 }
 
 // Engine-specific query adaptations
@@ -91,7 +109,8 @@ export function buildQueryString(state, dom) {
     const selected = category.options.find(opt => opt.checked) || category.options[0];
     if (selected) {
       if (selected.isDomainTarget) {
-        optionsQuery = selected.value + userQuery;
+        // Use subdomainQuery for subdomain searches
+        optionsQuery = subdomainQuery(userQuery);
       } else if (selected.isCustomHandler) {
         optionsQuery = userQuery;
       } else {
