@@ -32,13 +32,12 @@ const dom = {
   safeModeToggle: document.getElementById('safeModeToggle'),
   toast: document.getElementById('toast'),
   cheatEngineLabel: document.getElementById('cheatEngineLabel'),
-  searchSuggestions: document.getElementById('searchSuggestions'),
-  queryPreview: document.getElementById('queryPreview')
+  searchSuggestions: document.getElementById('searchSuggestions')
 };
 
 // State management
 const state = {
-  activeCategory: 'file_search',
+  activeCategory: 'web',
   selectedOptions: [],
   selectedEngines: ['google'],
   isSafeMode: true,
@@ -46,10 +45,6 @@ const state = {
   query: '',
   lastSearchKey: null,
   lastSearchTime: 0,
-  categories: searchCategories,
-  engines: searchEngines,
-  searchHistory: [],
-  historyTagFilter: '',
   updateState(newState) {
     Object.assign(this, newState);
   },
@@ -154,13 +149,7 @@ async function init() {
     );
 
     // Initialize history
-    try {
-      state.searchHistory = await db.getAll('history') || [];
-      await renderHistory(state, dom);
-    } catch (err) {
-      console.error('Failed to load search history:', err);
-      state.searchHistory = [];
-    }
+    await renderHistory(state, dom);
     
     // Initialize options and preview
     renderOptions(state.activeCategory, state, dom, buildQueryString, renderPreview, checkSearchButtonState);
@@ -214,8 +203,7 @@ async function init() {
       handlePreview: () => renderPreview(state, dom, buildQueryString)
     });
 
-    // Initialize UI components
-    renderEngines(state, dom, () => {}, updateSearchBtnLabel, () => renderPreview(state, dom, buildQueryString));
+    // Initialize state
     updateSearchBtnLabel();
     checkSearchButtonState();
 

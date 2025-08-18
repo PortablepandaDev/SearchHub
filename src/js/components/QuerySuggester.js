@@ -1,38 +1,115 @@
-// QuerySuggester.js - Provides AI-assisted query suggestions
+// QuerySuggester.js - Provides contextual query suggestions and autocomplete.
 export class QuerySuggester {
     constructor() {
-        this.commonPatterns = {
-            'api_key': /api[_\s]?key/i,
-            'email': /email|e-mail/i,
-            'password': /password|passwd/i,
-            'date': /after|before|during|date/i,
-            'filetype': /pdf|excel|doc|csv/i
-        };
+        // A data-driven ruleset for generating suggestions.
+        this.suggestionRules = [
+            {
+                keywords: [/api[_\s]?key/i, /secret/i, /token/i],
+                suggestions: [
+                    'filename:.env "API_KEY"',
+                    'intext:"api_key" filetype:yaml',
+                    'site:github.com "api_key" "authorization"',
+                    'site:pastebin.com "secret key"'
+                ],
+                exclude_if_present: ['filename:', 'intext:']
+            },
+            {
+                keywords: [/password/i, /passwd/i, /credentials/i],
+                suggestions: [
+                    'filetype:log intext:"password"',
+                    'filetype:sql "password"|"pass"',
+                    'site:trello.com "password"',
+                    'filename:.env "DB_PASSWORD"'
+                ],
+                exclude_if_present: ['filetype:']
+            },
+            {
+                keywords: [/email/i, /e-mail/i, /contact/i],
+                suggestions: [
+                    'intext:"@gmail.com" filetype:xls',
+                    'site:pastebin.com intext:"@company.com"'
+                ]
+            },
+            {
+                keywords: [/document/i, /report/i, /file/i],
+                suggestions: [
+                    'filetype:pdf',
+                    'filetype:docx',
+                    'filetype:csv "confidential"'
+                ],
+                exclude_if_present: ['filetype:']
+            },
+            {
+                keywords: [/subdomain/i, /domain/i],
+                suggestions: [
+                    'site:*.example.com -www',
+                    'inurl:dev. OR inurl:staging.'
+                ],
+                category: 'intelligence',
+                exclude_if_present: ['site:']
+            },
+            {
+                category: ['vulnerabilities', 'config_files', 'exposed_services', 'sensitive_files'],
+                suggestions: [
+                    'site:example.com',
+                    'intitle:"index of"',
+                    'inurl:admin'
+                ],
+                exclude_if_present: ['site:', 'intitle:', 'inurl:']
+            }
+        ];
 
-        this.operatorSuggestions = {
-            'filetype:': ['pdf', 'doc', 'xls', 'txt', 'env', 'yaml', 'json'],
-            'site:': ['github.com', 'gitlab.com', 'bitbucket.org', 'pastebin.com'],
-            'intext:': ['password', 'secret', 'api_key', 'credentials'],
-            'intitle:': ['index of', 'admin', 'dashboard', 'login'],
-            'inurl:': ['admin', 'config', 'settings', 'backup']
+        // Values for autocompleting search operators.
+        this.operatorAutocomplete = {
+            'filetype:': ['pdf', 'doc', 'xls', 'txt', 'env', 'yaml', 'json', 'sql', 'log'],
+            'site:': ['github.com', 'gitlab.com', 'bitbucket.org', 'pastebin.com', 'trello.com', '*.gov', '*.edu'],
+            'intext:': ['password', 'secret', 'api_key', 'credentials', 'confidential'],
+            'intitle:': ['index of', 'admin', 'dashboard', 'login', 'config'],
+            'inurl:': ['admin', 'config', 'settings', 'backup', 'login', 'phpmyadmin']
         };
     }
 
-    analyzeQuery(query) {
-        const suggestions = [];
-        
-        // Check for common patterns
-        Object.entries(this.commonPatterns).forEach(([type, pattern]) => {
-            if (pattern.test(query)) {
-                suggestions.push(...this.getContextualSuggestions(type));
+    /**
+     * Analyzes a query and returns a list of relevant suggestions.
+     * @param {string} query The user's search query.
+     * @param {string|null} category The active search category for context.
+     * @returns {string[]} An array of unique suggestion strings.
+     */
+    analyzeQuery(query, category = null) {
+        const suggestions = new Set();
+        const lowerQuery = query.toLowerCase();
+
+        // Simple parser to detect existing operators like "site:", "filetype:", etc.
+        const presentOperators = (lowerQuery.match(/\b\w+:/g) || []).map(op => op.slice(0, -1));
+
+        this.suggestionRules.forEach(rule => {
+            // Skip rule if it's for a different category
+            if (rule.category) {
+                const categories = Array.isArray(rule.category) ? rule.category : [rule.category];
+                if (!category || !categories.includes(category)) {
+                    return;
+                }
+            }
+
+            // A rule is triggered by a keyword match, or if it's a general category rule without keywords.
+            const keywordMatch = rule.keywords && rule.keywords.some(kw => kw.test(lowerQuery));
+            const isApplicable = keywordMatch || (!rule.keywords && rule.category);
+
+            if (isApplicable) {
+                // Don't suggest if the query already uses a related operator.
+                const shouldExclude = rule.exclude_if_present && rule.exclude_if_present.some(op => presentOperators.includes(op));
+                
+                if (!shouldExclude) {
+                    rule.suggestions.forEach(s => suggestions.add(s));
+                }
             }
         });
 
-        // Add operator suggestions based on query context
-        const operators = this.detectMissingOperators(query);
-        suggestions.push(...operators);
-
-        return suggestions;
+        // Add general "did you mean" style suggestions for common missing operators.
+        if (!presentOperators.includes('site') && /github|gitlab|company|website/i.test(lowerQuery)) {
+            suggestions.add('Consider adding `site:` to narrow your search (e.g., site:github.com).');
+        }
+        if (!presentOperators.includes('filetype') && /document|file
     }
 
     getContextualSuggestions(type) {

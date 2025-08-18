@@ -1,6 +1,8 @@
 // Engine selection and rendering
 import { safeGet, safeSet } from './utils.js';
+import { searchEngines as configuredEngines } from './config/searchEngines.js';
 
+// Use the configured engines
 export const searchEngines = {
   google: { 
     name: "Google", 
@@ -79,10 +81,11 @@ export const searchEngines = {
 export function renderEngines(state, dom, _updateCheatsheet, updateSearchBtnLabel, renderPreview) {
   dom.engineChips.innerHTML = '';
   Object.keys(searchEngines).forEach(key => {
-    const selected = key === state.activeEngine;
+    const selected = state.selectedEngines.includes(key);
     const btn = document.createElement('button');
     btn.className = `engine-chip search-engine-tab border border-gray-700 rounded-full px-3 py-1 text-sm ${selected ? 'active' : ''}`;
     btn.setAttribute('aria-pressed', selected);
+    btn.setAttribute('data-engine', key);
     btn.innerHTML = `<span>${searchEngines[key].name}</span>`;
     btn.addEventListener('click', () => toggleEngine(key, state, dom, renderEngines, _updateCheatsheet, updateSearchBtnLabel, renderPreview));
     dom.engineChips.appendChild(btn);
@@ -91,15 +94,18 @@ export function renderEngines(state, dom, _updateCheatsheet, updateSearchBtnLabe
 }
 
 export function toggleEngine(key, state, dom, renderEngines, _updateCheatsheet, updateSearchBtnLabel, renderPreview) {
-  // Set the active engine
-  state.activeEngine = key;
-  // Keep selectedEngines in sync for backwards compatibility
-  state.selectedEngines = [key];
-  // Always keep at least one engine selected
-  if (state.selectedEngines.length === 0) {
-    state.selectedEngines = [key];
+  // Toggle the engine in selectedEngines
+  const index = state.selectedEngines.indexOf(key);
+  if (index === -1) {
+    state.selectedEngines.push(key);
+  } else if (state.selectedEngines.length > 1) {
+    state.selectedEngines.splice(index, 1);
   }
+  
+  // Set active engine to the first selected one
   state.activeEngine = state.selectedEngines[0];
+  
+  // Save state
   safeSet('selectedEngines', state.selectedEngines);
   safeSet('activeEngine', state.activeEngine);
   renderEngines(state, dom, _updateCheatsheet, updateSearchBtnLabel, renderPreview);

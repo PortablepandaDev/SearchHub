@@ -1,7 +1,9 @@
 export const searchEngines = {
     google: { 
         name: "Google", 
-        url: "https://www.google.com/search?q=" 
+        url: "https://www.google.com/search?q=",
+        icon: "google",
+        description: "General web search"
     },
     duckduckgo: { 
         name: "DuckDuckGo", 
