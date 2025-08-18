@@ -1,8 +1,9 @@
 // History and favorites logic
-import { safeGet, safeSet } from './utils.js';
+import { db } from './utils/db.js';
 import { historyRow, favoriteRow } from './utils/domHelpers.js';
+import { showToast } from './utils/toast.js';
 
-export function renderFavorites(state, dom) {
+export async function renderFavorites(state, dom) {
   // Clear container
   while (dom.favoritesContainer.firstChild) {
     dom.favoritesContainer.removeChild(dom.favoritesContainer.firstChild);
@@ -22,13 +23,30 @@ export function renderFavorites(state, dom) {
   });
 }
 
-export function addToHistory(item, state, renderHistory) {
-  // Check for exact duplicates (same query and URL)
-  if (!state.searchHistory.some(h => h.query === item.query && h.url === item.url)) {
-    state.searchHistory.unshift(item);
-    if (state.searchHistory.length > 50) state.searchHistory.pop();
-    safeSet('searchHistory', state.searchHistory);
-    renderHistory();
+export async function addToHistory(item, state, renderHistory) {
+  try {
+    // Check for exact duplicates (same query and URL)
+    const history = await db.getAll('history');
+    if (!history.some(h => h.query === item.query && h.url === item.url)) {
+      await db.add('history', {
+        ...item,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Limit history size
+      const allHistory = await db.getAll('history');
+      if (allHistory.length > 50) {
+        const oldestEntry = allHistory.sort((a, b) => 
+          new Date(a.timestamp) - new Date(b.timestamp)
+        )[0];
+        await db.delete('history', oldestEntry.id);
+      }
+      
+      renderHistory();
+    }
+  } catch (error) {
+    console.error('Failed to add to history:', error);
+    showToast('Failed to save to history', 'error');
   }
 }
 

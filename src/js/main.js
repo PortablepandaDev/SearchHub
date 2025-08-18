@@ -6,7 +6,9 @@ function updateSearchBtnLabel() {
 import { renderEngines, searchEngines, toggleEngine } from './engines.js';
 import { renderCategories, searchCategories } from './categories.js';
 import { renderHistory, addToHistory } from './history.js';
-import { renderTemplates, saveTemplate, deleteTemplate } from './templates.js';
+import { TemplatesUI } from './components/TemplatesUI.js';
+import { defaultTemplates } from './config/defaultTemplates.js';
+import { db } from './utils/db.js';
 import { renderOptions } from './options.js';
 import { renderPreview } from './preview.js';
 import { handleSearch, handleCopy } from './search.js';
@@ -26,9 +28,9 @@ const dom = {
   engineChips: document.getElementById('engineChips'),
   categoryContainer: document.getElementById('categoryContainer'),
   historyContainer: document.getElementById('historyContainer'),
-  templateSelect: document.getElementById('templateSelect'),
-  saveTemplateBtn: document.getElementById('saveTemplateBtn'),
-  deleteTemplateBtn: document.getElementById('deleteTemplateBtn'),
+  templatesContainer: document.getElementById('templatesContainer'),
+  importTemplatesBtn: document.getElementById('importTemplatesBtn'),
+  exportTemplatesBtn: document.getElementById('exportTemplatesBtn'),
   optionsTitle: document.getElementById('optionsTitle'),
   optionsDescription: document.getElementById('optionsDescription'),
   optionsContainer: document.getElementById('optionsContainer'),
@@ -181,7 +183,39 @@ async function init() {
     // Initialize history and templates
     await Promise.all([
       renderHistory(state, dom),
-      renderTemplates(state, dom)
+      (async () => {
+        try {
+          // Wait for DB initialization
+          await db.ready;
+          
+          // Initialize templates UI
+          const templatesUI = new TemplatesUI(dom.templatesContainer);
+          
+          // Wait for initialization to complete
+          await new Promise(resolve => setTimeout(resolve, 100)); // Give time for init() to complete
+          
+          // Load default templates if none exist
+          if (!templatesUI.templates.length) {
+            console.log('No templates found, adding defaults...');
+            for (const template of defaultTemplates) {
+              try {
+                await db.add('templates', {
+                  ...template,
+                  created: new Date().toISOString(),
+                  lastUsed: new Date().toISOString()
+                });
+              } catch (err) {
+                console.error('Failed to add template:', err);
+              }
+            }
+            // Re-render after adding default templates
+            await templatesUI.init();
+          }
+        } catch (error) {
+          console.error('Failed to initialize templates:', error);
+          showToast('Failed to initialize templates system', 'error');
+        }
+      })()
     ]);
 
     // Initialize options and preview
