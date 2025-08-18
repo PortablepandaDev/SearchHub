@@ -2,8 +2,10 @@ import { db } from '../utils/db.js';
 import { showToast } from '../utils/toast.js';
 
 export class TemplatesUI {
-    constructor(container) {
+    constructor(container, state, callbacks = {}) {
         this.container = container;
+        this.state = state;
+        this.callbacks = callbacks;
         this.templates = [];
         this.init();
     }
@@ -30,6 +32,14 @@ export class TemplatesUI {
     setupEventListeners() {
         document.getElementById('importTemplatesBtn')?.addEventListener('click', () => this.importTemplates());
         document.getElementById('exportTemplatesBtn')?.addEventListener('click', () => this.exportTemplates());
+        
+        // Add keyboard shortcut for saving templates
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 's') {
+                e.preventDefault();
+                this.saveCurrentSetup();
+            }
+        });
     }
 
     async render() {
@@ -80,19 +90,60 @@ export class TemplatesUI {
     }
 
     async useTemplate(template) {
-        // Dispatch an event to load the template
-        const event = new CustomEvent('loadTemplate', { 
-            detail: template 
-        });
-        document.dispatchEvent(event);
+        try {
+            // Update the state
+            this.state.updateState({
+                query: template.query || '',
+                activeCategory: template.category,
+                selectedOptions: template.options || [],
+                selectedEngines: template.engines || [],
+                safeMode: template.safeMode
+            });
+
+            // Call the callbacks if provided
+            if (this.callbacks.onTemplateLoad) {
+                this.callbacks.onTemplateLoad(template);
+            }
+            
+            // Update last used timestamp
+            await db.update('templates', {
+                ...template,
+                lastUsed: new Date().toISOString()
+            });
+            
+            showToast('Template loaded successfully');
+        } catch (error) {
+            console.error('Failed to load template:', error);
+            showToast('Failed to load template', 'error');
+        }
+    }
+
+    async saveCurrentSetup() {
+        const name = prompt('Enter a name for this template:');
+        if (!name) return;
+
+        const description = prompt('Enter a description (optional):');
         
-        // Update last used timestamp
-        await db.update('templates', {
-            ...template,
-            lastUsed: new Date().toISOString()
-        });
+        const template = {
+            name,
+            description,
+            timestamp: new Date().toISOString(),
+            query: this.state.query,
+            category: this.state.activeCategory,
+            options: this.state.selectedOptions,
+            engines: this.state.selectedEngines,
+            safeMode: this.state.safeMode
+        };
         
-        showToast('Template loaded');
+        try {
+            await db.add('templates', template);
+            this.templates = await db.getAll('templates');
+            await this.render();
+            showToast('Template saved successfully');
+        } catch (error) {
+            console.error('Failed to save template:', error);
+            showToast('Failed to save template', 'error');
+        }
     }
 
     async deleteTemplate(id) {

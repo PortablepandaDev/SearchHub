@@ -143,6 +143,36 @@ const aiSuggester = new AISuggester();
 
 
 
+// Load a template into the current search setup
+function loadTemplate(template) {
+  // Update the state with template values
+  state.updateState({
+    query: template.query || '',
+    category: template.category,
+    selectedOptions: template.selectedOptions || [],
+    selectedEngines: template.selectedEngines || [],
+    safeMode: template.safeMode
+  });
+
+  // Update UI
+  if (template.category) {
+    renderCategories(state, dom, {}, 
+      (key) => renderOptions(key, state, dom, buildQueryString, renderPreview, checkSearchButtonState),
+      buildQueryString,
+      renderPreview,
+      checkSearchButtonState
+    );
+  }
+
+  if (template.query) {
+    dom.searchQuery.value = template.query;
+  }
+
+  // Update preview
+  renderPreview(state, dom, buildQueryString);
+  checkSearchButtonState();
+}
+
 // Initialize the application
 async function init() {
   console.log('INIT: Starting initialization');
@@ -189,7 +219,18 @@ async function init() {
           await db.ready;
           
           // Initialize templates UI
-          const templatesUI = new TemplatesUI(dom.templatesContainer);
+          const templatesUI = new TemplatesUI(dom.templatesContainer, state, {
+            onTemplateLoad: () => {
+              renderCategories(state, dom, {}, 
+                (key) => renderOptions(key, state, dom, buildQueryString, renderPreview, checkSearchButtonState),
+                buildQueryString,
+                renderPreview,
+                checkSearchButtonState
+              );
+              renderPreview(state, dom, buildQueryString);
+              checkSearchButtonState();
+            }
+          });
           
           // Wait for initialization to complete
           await new Promise(resolve => setTimeout(resolve, 100)); // Give time for init() to complete
