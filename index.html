@@ -3,971 +3,223 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Content Security Policy for enhanced security -->
     <meta http-equiv="Content-Security-Policy"
           content="default-src 'self' https:; script-src 'self' https://cdn.tailwindcss.com https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https:;" />
     <title>Advanced Search Hub v3.2</title>
 
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="src/css/style.css">
+
     <style>
-        body{font-family:'Inter',sans-serif;background-color:#030712;color:#d1d5db}
-        .search-engine-tab.active{background-color:#3b82f6;color:#fff}
-        .category-btn{transition:all .2s ease-in-out}
-        .category-btn.active{background-color:#3b82f6;color:#fff}
-        .category-btn:not(.active):hover{background-color:#1f2937}
-        .search-btn{transition:all .2s ease-in-out}
-        .search-btn:disabled{background-color:#374151;cursor:not-allowed;opacity:.5}
-        .option-label{transition:all .2s ease-in-out}
-        .option-label:hover{background-color:#374151}
-        input[type="checkbox"]:checked+.option-label,input[type="radio"]:checked+.option-label{background-color:#3b82f6;color:#fff;border-color:#1d4ed8}
-        .history-panel::-webkit-scrollbar{width:8px}
-        .history-panel::-webkit-scrollbar-track{background:#1f2937}
-        .history-panel::-webkit-scrollbar-thumb{background-color:#374151;border-radius:10px;border:2px solid #1f2937}
-        .icon-btn:hover{background-color:#374151}
-        /* Toast */
-        #toast{position:fixed;bottom:-100px;left:50%;transform:translateX(-50%);padding:1rem 1.5rem;border-radius:.5rem;background-color:#1f2937;color:#fff;box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);transition:bottom .5s ease-in-out;z-index:50}
-        #toast.show{bottom:20px}
-        #toast.error{background-color:#ef4444}
-        #toast.success{background-color:#22c55e}
-        /* Collapsible */
-        .collapsible[aria-expanded="true"] .rotate{transform:rotate(180deg)}
-        .engine-chip.active{background:#2563eb;color:#fff;border-color:#1d4ed8}
+        :root {
+            --bg-main: #0c0e16;
+            --bg-darker: #090b11;
+            --bg-lighter: #171b2d;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+        }
+        
+        .engine-chip {
+            background-color: var(--bg-lighter);
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+        
+        .engine-chip:hover {
+            background-color: #1e2436;
+        }
+        
+        .engine-chip.active {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+        
+        .category-btn { 
+            transition: all 0.2s ease;
+            background-color: var(--bg-lighter);
+            color: var(--text-secondary);
+        }
+        
+        .category-btn:hover {
+            background-color: #1e2436;
+        }
+        
+        .category-btn.active {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+        
+        input, select {
+            background-color: var(--bg-darker) !important;
+            color: var(--text-primary) !important;
+            border-color: #1e2436 !important;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+        }
+        
+        #searchButton {
+            background-color: var(--accent-blue);
+            color: white;
+            transition: all 0.2s ease;
+        }
+        
+        #searchButton:hover {
+            background-color: #2563eb;
+        }
+        
+        #searchButton:disabled {
+            background-color: #374151;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .history-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .history-panel::-webkit-scrollbar-track {
+            background: var(--bg-lighter);
+        }
+        
+        .history-panel::-webkit-scrollbar-thumb {
+            background-color: #374151;
+            border-radius: 3px;
+        }
+        
+        #toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            background-color: var(--bg-lighter);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            transition: bottom 0.5s ease-in-out;
+            z-index: 50;
+        }
+        
+        #toast.show {
+            bottom: 20px;
+        }
+        
+        #toast.error {
+            background-color: #ef4444;
+        }
+        
+        #toast.success {
+            background-color: var(--accent-green);
+        }
+        
+        /* Custom background colors */
+        .bg-gray-800\/50 {
+            background-color: var(--bg-lighter);
+        }
     </style>
 </head>
 <body class="antialiased">
-<div class="container mx-auto p-4 md:p-8 max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Main Content -->
-    <main class="lg:col-span-2">
+    <div class="container mx-auto p-4 max-w-5xl">
         <!-- Header -->
         <header class="text-center mb-6">
-            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-2">
-                <h1 class="text-4xl md:text-5xl font-bold text-white">Advanced Search Hub</h1>
-                <!-- Safe Mode Toggle -->
-                <div class="flex items-center space-x-2">
-                    <span class="text-sm font-medium text-gray-400">Safe Mode</span>
-                    <button id="safeModeToggle" role="switch" aria-checked="true" class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors bg-green-500">
-                        <span class="sr-only">Enable/Disable Safe Mode</span>
-                        <span class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform translate-x-6"></span>
-                    </button>
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-semibold text-white">Advanced Search Hub</h1>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center">
+                        <span class="text-sm text-gray-400 mr-2">Safe Mode</span>
+                        <button id="safeModeToggle" class="w-12 h-6 bg-green-500 rounded-full relative transition-colors duration-200">
+                            <span class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200"></span>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <p class="text-lg text-gray-400">Craft powerful searches for any engine.</p>
+            <p class="text-sm text-gray-400 mt-1">Craft powerful searches for any engine.</p>
         </header>
 
-        <!-- Engine Selector (multi-engine) + Templates Row -->
-        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 mb-4">
-            <div class="flex flex-col gap-3">
-                <!-- Engines multi-select chips -->
-                <div>
-                    <div class="flex flex-wrap gap-2" id="engineChips" aria-label="Search engines"></div>
-                    <p class="text-xs text-gray-500 mt-1">Tip: First selected is primary. Press <kbd class="px-1 bg-gray-800 rounded">Alt</kbd>+<kbd class="px-1 bg-gray-800 rounded">G</kbd>/<kbd class="px-1 bg-gray-800 rounded">B</kbd>/<kbd class="px-1 bg-gray-800 rounded">D</kbd>/<kbd class="px-1 bg-gray-800 rounded">Y</kbd> to switch.</p>
-                </div>
-                <!-- Templates controls -->
-                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                    <div class="sm:col-span-7 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-xl" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5v14l7-3 7 3V5l-7 3-7-3z" /></svg>
-                        <select id="templateSelect" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm">
-                            <option value="" selected>Load template…</option>
-                        </select>
-                        <button id="saveTemplateBtn" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm border border-gray-600">Save current</button>
-                        <button id="deleteTemplateBtn" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm border border-gray-600">Delete</button>
-                    </div>
-                    <div class="sm:col-span-5 flex items-center justify-end gap-2">
-                        <button id="exportBtn" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm border border-gray-600 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>Export</button>
-                        <label class="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm border border-gray-600 cursor-pointer flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> Import
-                            <input id="importInput" type="file" accept="application/json" class="hidden" />
-                        </label>
-                    </div>
-                </div>
-            </div>
+        <!-- Search Engines -->
+        <div class="bg-gray-800/50 rounded-lg p-4 mb-4">
+            <div id="engineChips" class="flex flex-wrap gap-2"></div>
         </div>
 
-        <!-- Search Input, Regex Helper & Date Filters -->
-        <div class="bg-gray-900 p-4 rounded-lg border border-gray-700 mb-6">
-            <div class="flex flex-col sm:flex-row gap-2 mb-4">
-                <input type="text" id="searchQuery" class="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500" placeholder="Enter your search query..." />
-                <button id="copyButton" title="Copy Raw Query" class="w-full sm:w-auto p-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 search-btn shadow-lg flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
-                <button id="searchButton" class="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 search-btn shadow-lg flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-xl" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    <span id="searchBtnLabel">Search</span>
+        <!-- Main Search Area -->
+        <div class="bg-gray-800/50 rounded-lg p-4 mb-4">
+            <!-- Templates -->
+            <div class="flex gap-2 mb-4">
+                <select id="templateSelect" class="flex-grow px-3 py-2 rounded text-sm border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                    <option value="">Load template...</option>
+                </select>
+                <button id="saveTemplateBtn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-sm text-gray-200 rounded transition-colors">Save</button>
+                <button id="deleteTemplateBtn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-sm text-gray-200 rounded transition-colors">Delete</button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="flex gap-2">
+                <div class="flex-grow relative">
+                    <input type="text" id="searchQuery" 
+                        class="w-full px-4 py-2.5 rounded text-sm border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+                            placeholder="Enter your search query..." />
+                    <div id="searchSuggestions" class="hidden absolute w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                        <!-- Suggestions will be populated here -->
+                    </div>
+                </div>
+                <button id="searchButton" 
+                    class="px-6 py-2.5 text-sm font-medium rounded text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Search
                 </button>
             </div>
+        </div>
 
-            <!-- Regex helper -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Must include (comma separated)</label>
-                    <input id="includeTerms" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg" placeholder="e.g., \"login\", error" />
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Must NOT include</label>
-                    <input id="excludeTerms" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg" placeholder="e.g., tutorial, sample" />
-                </div>
-                <div class="flex items-end gap-3">
-                    <label class="inline-flex items-center gap-2 text-sm text-gray-400">
-                        <input id="exactPhrases" type="checkbox" class="rounded" />
-                        Wrap includes in quotes
-                    </label>
-                    <button id="clearRegexBtn" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm border border-gray-600 ml-auto">Clear</button>
+        <!-- Categories and Options -->
+        <div class="grid grid-cols-12 gap-4">
+            <!-- Left Column - Categories -->
+            <div class="col-span-4">
+                <div class="bg-gray-800/50 rounded-lg p-4">
+                    <div id="categoryContainer" class="space-y-2"></div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label for="afterDate" class="block text-sm font-medium text-gray-400 mb-1">After Date</label>
-                    <input type="date" id="afterDate" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white" />
-                </div>
-                <div>
-                    <label for="beforeDate" class="block text-sm font-medium text-gray-400 mb-1">Before Date</label>
-                    <input type="date" id="beforeDate" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white" />
-                </div>
-            </div>
-
-            <!-- Operators Cheatsheet -->
-            <div class="mt-4">
-                <button id="cheatsToggle" class="collapsible w-full flex items-center justify-between px-3 py-2 bg-gray-800 border border-gray-700 rounded-md">
-                    <span class="text-sm">Operators cheatsheet (<span id="cheatEngineLabel">Google</span>)</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 rotate transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                <div id="cheatsBody" class="hidden bg-gray-800 border border-gray-700 border-t-0 rounded-b-md p-3 text-sm text-gray-300">
-                    <ul id="cheatsList" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1"></ul>
+            <!-- Right Column - Options -->
+            <div class="col-span-8">
+                <div class="bg-gray-800/50 rounded-lg p-4">
+                    <h3 id="optionsTitle" class="text-sm font-medium text-gray-200 mb-1"></h3>
+                    <p id="optionsDescription" class="text-xs text-gray-400 mb-4"></p>
+                    <div id="optionsContainer" class="space-y-2"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Category Menu and Options Panel -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div class="md:col-span-1">
-                <h2 class="text-xl font-semibold mb-4 text-white">1. Category</h2>
-                <div id="categoryContainer" role="tablist" aria-orientation="vertical" class="space-y-2"></div>
-            </div>
-            <div class="md:col-span-3">
-                <div id="optionsWrapper" role="tabpanel" class="bg-gray-900 border border-gray-700 rounded-lg p-6 min-h-[250px] shadow-2xl">
-                    <h2 id="optionsTitle" class="text-xl font-semibold mb-1 text-white">2. Options</h2>
-                    <p id="optionsDescription" class="text-gray-400 mb-6">Select a category to see available options.</p>
-                    <div id="optionsContainer" class="space-y-3"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Live Query Preview -->
-        <div class="bg-gray-900 border border-gray-700 rounded-lg p-4 mt-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-xl" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                    <span class="font-semibold">Live query preview</span>
-                    <span class="text-xs text-gray-400">(primary engine syntax)</span>
-                </div>
-                <div class="flex gap-2">
-                    <button id="copyPreviewBtn" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm border border-gray-600">Copy</button>
-                    <button id="runPreviewBtn" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm">Run</button>
-                </div>
-            </div>
-            <pre id="queryPreview" class="whitespace-pre-wrap break-words text-sm bg-gray-800 border border-gray-700 rounded p-3"></pre>
-        </div>
-    </main>
-
-    <!-- Sidebar -->
-    <aside class="lg:col-span-1 space-y-8">
         <!-- History Panel -->
-        <div class="bg-gray-900 border border-gray-700 rounded-lg p-4 shadow-2xl">
-            <h3 class="text-lg font-semibold text-white mb-4 flex justify-between items-center">
-                <span>Search History</span>
-                <button id="clearHistoryBtn" title="Clear History" class="text-gray-400 hover:text-white icon-btn p-1 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-            </h3>
-            <div id="historyContainer" aria-live="polite" class="history-panel max-h-64 overflow-y-auto space-y-2">
-                <p class="text-gray-500">Your recent searches will appear here.</p>
+        <div class="fixed top-4 right-4 w-72 bg-gray-800/90 rounded-lg shadow-lg border border-gray-700/50 overflow-hidden backdrop-blur-sm">
+            <div class="px-4 py-3 border-b border-gray-700/50">
+                <h3 class="text-sm font-medium text-gray-200">Search History</h3>
+            </div>
+            <div id="historyContainer" class="p-3 max-h-[calc(100vh-12rem)] overflow-y-auto history-panel">
+                <!-- History items will be rendered here -->
             </div>
         </div>
-        <!-- Favorites Panel -->
-        <div class="bg-gray-900 border border-gray-700 rounded-lg p-4 shadow-2xl">
-            <h3 class="text-lg font-semibold text-white mb-4">Favorites</h3>
-            <div id="favoritesContainer" class="history-panel max-h-64 overflow-y-auto space-y-2">
-                <p class="text-gray-500">Your saved searches will appear here.</p>
-            </div>
-        </div>
-    </aside>
 
-    <!-- Footer -->
-    <footer class="text-center mt-8 text-gray-500 text-sm lg:col-span-3 space-y-2">
-        <p>This tool is for educational purposes only. Please use responsibly.</p>
-        <p class="text-xs text-gray-600">Shortcuts: <kbd class="px-1 bg-gray-800 rounded">/</kbd> focus • <kbd class="px-1 bg-gray-800 rounded">Ctrl</kbd>+<kbd class="px-1 bg-gray-800 rounded">Enter</kbd> search • <kbd class="px-1 bg-gray-800 rounded">Alt</kbd>+<kbd class="px-1 bg-gray-800 rounded">S</kbd> toggle Safe Mode.</p>
-    </footer>
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2"></div>
 
-    <!-- Toast Notification -->
-    <div id="toast"></div>
-</div>
+        <!-- Query Preview -->
+        <div id="queryPreview" class="fixed bottom-4 left-4 right-4 max-w-2xl mx-auto bg-gray-800/90 rounded-lg shadow-lg border border-gray-700/50 overflow-hidden backdrop-blur-sm p-3 text-sm font-mono hidden"></div>
+    </div>
 
-<script>
-// --- CONFIGURATION & DATA ---
-const searchEngines = {
-  google: { name: "Google", url: "https://www.google.com/search?q=" },
-  duckduckgo: { name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
-  bing: { name: "Bing", url: "https://www.bing.com/search?q=" },
-  yandex: { name: "Yandex", url: "https://yandex.com/search/?text=" }
-};
-
-const operatorCheats = {
-  google: [
-    "site:example.com — restrict to domain",
-    "filetype:pdf — only this file type",
-    "inurl:login — URL contains term",
-    "intitle:admin — title contains term",
-    "after:YYYY-MM-DD / before:YYYY-MM-DD",
-    '"exact phrase" and -exclude and OR'
-  ],
-  bing: [
-    "site:example.com",
-    "filetype:pdf (or ext:pdf)",
-    "inurl:admin",
-    "intitle:login",
-    "after:YYYY-MM-DD / before:YYYY-MM-DD",
-    '"phrase" -exclude OR include'
-  ],
-  duckduckgo: [
-    "site:example.com",
-    "filetype:pdf (limited support)",
-    "inurl:term",
-    "intitle:term",
-    '"phrase" -exclude OR include'
-  ],
-  yandex: [
-    "site:example.com",
-    "mime:pdf (file type)",
-    "url:term (in URL)",
-    "title:term (in title)",
-    '"phrase" -exclude OR include'
-  ]
-};
-
-const icons = {
-    'folder-open-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>`,
-    'people-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.975 5.975 0 0112 13a5.975 5.975 0 013-1.197M15 21a9 9 0 00-9-5.197M15 21a9 9 0 00-9-5.197" /></svg>`,
-    'code-slash-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>`,
-    'document-text-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`,
-    'earth-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h10a2 2 0 002-2v-1a2 2 0 012-2h1.945M7.707 4.293l.536.536M16.293 4.293l-.536.536M7.707 20.293l.536-.536M16.293 20.293l-.536-.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
-    'hardware-chip-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M12 6V4m0 16v-2M8 9a4 4 0 100-8 4 4 0 000 8z" /></svg>`,
-    'bug-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`,
-    'settings-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>`,
-    'server-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>`,
-    'document-lock-outline': `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-2xl flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>`
-};
-
-const searchCategories = {
-  file_search: {
-    name: 'File Search', icon: 'folder-open-outline',
-    description: "Find specific filetypes in open directories.",
-    placeholder: "e.g., daft punk",
-    baseQuery: 'intitle:"index of" "last modified" "parent directory"',
-    optionsType: 'radio',
-    options: [
-      { label: "Music", value: "music", checked: true, placeholder: "e.g., daft punk", subOptions: [ {label: ".mp3", value: ".mp3", checked: true}, {label: ".flac", value: ".flac", checked: true}, {label: ".m4a", value: ".m4a"}, {label: ".wav", value: ".wav"}, {label: ".opus", value: ".opus"} ] },
-      { label: "Books", value: "books", placeholder: "e.g., nineteen eighty-four", subOptions: [ {label: ".pdf", value: ".pdf", checked: true}, {label: ".epub", value: ".epub", checked: true}, {label: ".doc", value: ".doc"}, {label: ".djvu", value: ".djvu"}, {label: ".mobi", value: ".mobi"} ] },
-      { label: "Video", value: "video", placeholder: "e.g., the matrix", subOptions: [ {label: ".mkv", value: ".mkv", checked: true}, {label: ".mp4", value: ".mp4", checked: true}, {label: ".avi", value: ".avi"}, {label: ".mov", value: ".mov"}, {label: ".webm", value: ".webm"} ] },
-      { label: "Apps", value: "apps", placeholder: "e.g., photoshop", subOptions: [ {label: ".exe", value: ".exe", checked: true}, {label: ".apk", value: ".apk"}, {label: ".dmg", value: ".dmg"} ] },
-      { label: "Archives", value: "archives", placeholder: "e.g., project files", subOptions: [ {label: ".zip", value: ".zip", checked: true}, {label: ".rar", value: ".rar", checked: true}, {label: ".7z", value: ".7z"}, {label: ".tar.gz", value: ".tar.gz"}, {label: ".iso", value: ".iso"}, {label: ".bin", value: ".bin"}, {label: ".cue", value: ".cue"} ] }
-    ]
-  },
-  social: {
-    name: 'Social', icon: 'people-outline',
-    description: "Search for profiles and content on social media.", placeholder: "e.g., john doe", baseQuery: '', optionsType: 'radio',
-    options: [
-      { label: "Reddit", value: "site:reddit.com", checked: true, description: "Find discussions, communities, and user comments.", placeholder: "e.g., elon musk" },
-      { label: "LinkedIn", value: "site:linkedin.com/in/", description: "Search for professional profiles.", placeholder: "e.g., software engineer" },
-      { label: "Facebook", value: "site:facebook.com", description: "Find public profiles, pages, and groups.", placeholder: "e.g., jane smith photographer" },
-      { label: "Instagram", value: "site:instagram.com", description: "Search for public profiles and posts.", placeholder: "e.g., national geographic" },
-      { label: "TikTok", value: "site:tiktok.com", description: "Find user profiles and video content.", placeholder: "e.g., gordon ramsay" },
-      { label: "Telegram", value: "site:t.me", description: "Discover public channels and groups.", placeholder: "e.g., tech news" }
-    ]
-  },
-  code: { name: 'Code Repos', icon: 'code-slash-outline', description: "Search for code across major repositories.", placeholder: "e.g., user authentication", baseQuery: 'site:github.com | site:gitlab.com | site:bitbucket.org', options: [] },
-  snippets: {
-    name: 'Code Snippets', icon: 'document-text-outline', description: "Search for code snippets, notes, and leaked credentials.", placeholder: "e.g., database password", baseQuery: '', optionsType: 'radio',
-    options: [
-      { label: "GitHub Gists", value: "site:gist.github.com", checked: true, description: "Find public code snippets and notes on GitHub Gist.", placeholder: "e.g., aws secret key" },
-      { label: "Pastebin", value: "site:pastebin.com", description: "Search for leaked credentials and other sensitive text.", placeholder: "e.g., password dump" }
-    ]
-  },
-  intelligence: {
-    name: 'Intelligence', icon: 'earth-outline', description: "Perform advanced OSINT and reconnaissance searches.", placeholder: "e.g., example.com", baseQuery: '', optionsType: 'radio',
-    options: [
-      { label: "Find Subdomains", value: "site:*.", isDomainTarget: true, checked: true, description: "Enter a domain (e.g., example.com) to find its subdomains.", placeholder: "e.g., google.com" },
-      { label: "Wayback Machine", value: "wayback", isCustomHandler: true, description: "View historical snapshots of a website.", placeholder: "e.g., example.com" },
-      { label: "Gov Docs", value: "site:.gov filetype:pdf", description: "Finds PDF documents on government websites.", placeholder: "e.g., nasa budget" },
-      { label: "Edu Docs", value: "site:.edu filetype:pdf", description: "Finds PDF documents on educational websites.", placeholder: "e.g., harvard ai research" }
-    ]
-  },
-  network_devices: { name: 'Network Devices', icon: 'hardware-chip-outline', description: 'Find publicly accessible network devices like cameras, routers, and printers.', placeholder: 'e.g., city name', baseQuery: '', optionsType: 'radio', isSafe: false,
-    options: [
-      { label: "Webcams", value: 'inurl:view/view.shtml | intitle:"Live View / - AXIS"', checked: true, description: "Searches for publicly accessible security camera feeds.", placeholder: "e.g., new york" },
-      { label: "Routers", value: 'intitle:"router configuration"', description: "Finds web interfaces for routers.", placeholder: "e.g., Linksys" },
-      { label: "Printers", value: 'intitle:"printer status" inurl:hp/device/', description: "Finds web interfaces for network printers.", placeholder: "e.g., HP LaserJet" }
-    ]
-  },
-  vulnerabilities: { name: 'Vulnerabilities', icon: 'bug-outline', description: "Find common software vulnerabilities and error messages. Use responsibly.", placeholder: "e.g., site:example.com", baseQuery: '', isSafe: false, optionsType: 'radio',
-    options: [
-      { label: "SQL Errors", value: '"SQL syntax near" | "ORA-00921"', checked: true, description: "Finds pages that are displaying raw SQL error messages.", placeholder: 'e.g., "ORA-00921"' },
-      { label: "Exposed API Docs", value: 'inurl:/swagger/index.html', description: "Finds publicly exposed Swagger/OpenAPI documentation for APIs.", placeholder: "e.g., internal api" },
-      { label: "Public Trello Boards", value: 'site:trello.com "API Key" | "Password"', description: "Searches public Trello boards for leaked credentials.", placeholder: 'e.g., "Project Credentials" site:trello.com' },
-      { label: "Nessus Reports", value: '"This file was generated by Nessus"', description: "Finds publicly accessible vulnerability scan reports.", placeholder: "e.g., company name" }
-    ]
-  },
-  config_files: { name: 'Config Files', icon: 'settings-outline', description: "Find exposed configuration files and credentials. Use responsibly.", placeholder: "e.g., site:github.com", baseQuery: '', isSafe: false, optionsType: 'radio',
-    options: [
-      { label: "Exposed .env Files", value: 'filename:.env "DB_PASSWORD" | "API_KEY"', checked: true, description: "Finds environment configuration files which often contain credentials.", placeholder: 'e.g., filename:.env "MAIL_PASSWORD"' },
-      { label: "Exposed AWS Credentials", value: 'inurl:".aws/credentials"', description: "Searches for publicly exposed Amazon Web Services credential files.", placeholder: 'e.g., "aws_access_key_id"' },
-      { label: "Exposed SSH Keys", value: 'inurl:id_rsa -intext:pub', description: "Finds private SSH keys, which should never be public.", placeholder: 'e.g., "BEGIN RSA PRIVATE KEY" filetype:key' },
-      { label: "cPanel Configs", value: 'inurl:"/idx_config" "cpanel"', description: "Finds exposed cPanel configuration files.", placeholder: "e.g., site:example.com" },
-      { label: "Bash History", value: 'intitle:"Index of" .bash_history', description: "Finds publicly accessible bash command history files.", placeholder: 'e.g., filetype:bash_history "pass"' }
-    ]
-  },
-  exposed_services: { name: 'Exposed Services', icon: 'server-outline', description: "Find publicly accessible services and admin panels. Use responsibly.", placeholder: "e.g., company name", baseQuery: '', isSafe: false, optionsType: 'radio',
-    options: [
-      { label: "Jenkins Panels", value: 'intitle:"Dashboard [Jenkins]"', checked: true, description: "Finds unsecured Jenkins CI/CD dashboards.", placeholder: "e.g., jenkins" },
-      { label: "phpMyAdmin", value: 'inurl:/phpmyadmin/', description: "Finds phpMyAdmin database administration panels.", placeholder: "e.g., inurl:/phpmyadmin/setup/" },
-      { label: "Remote Desktop", value: 'intitle:"Remote Desktop Web Connection"', description: "Finds exposed RDP web connection portals.", placeholder: "e.g., company name" },
-      { label: "Apache Test Pages", value: 'intitle:"Test Page for Apache"', description: "Finds default Apache server installation pages.", placeholder: 'e.g., intitle:"Apache HTTP Server Test Page"' },
-      { label: "Server Stats", value: 'intitle:"Usage Statistics for"', description: "Finds exposed server statistics pages (e.g., AWStats).", placeholder: 'e.g., intitle:"Usage Statistics for" "Generated by Webalizer"' }
-    ]
-  },
-  sensitive_files: { name: 'Sensitive Files', icon: 'document-lock-outline', description: "Find backups, logs, and other potentially sensitive documents. Use responsibly.", placeholder: "e.g., site:example.com", baseQuery: '', isSafe: false, optionsType: 'radio',
-    options: [
-      { label: "Backup Dumps", value: '"Index of /backup" | "Index of /backups"', checked: true, description: "Finds directories that may contain sensitive backup files.", placeholder: 'e.g., "Index of /backup" "db.sql"' },
-      { label: "Access Logs", value: 'intitle:"Index of" access_log', description: "Finds access logs which may store sensitive information.", placeholder: 'e.g., filetype:log "access.log"' },
-      { label: "Confidential Docs", value: '"not for distribution" confidential filetype:pdf', description: "Finds PDF documents marked as confidential.", placeholder: 'e.g., "top secret" filetype:pdf' },
-      { label: "Financial Spreadsheets", value: 'intitle:"Index of" finance.xls', description: "Finds spreadsheets that may contain financial data.", placeholder: 'e.g., "finance" filetype:xls inurl:private' },
-      { label: "Password Lists", value: 'inurl:passlist.txt | filetype:xls username password', description: "Finds files that may contain lists of user credentials.", placeholder: 'e.g., filetype:sql "pass" "user"' },
-      { label: "Source Code Backups", value: 'intitle:"Index of" *.php.bak | *.html.bak', description: "Finds backup copies of source code files.", placeholder: 'e.g., "index.php.bak"' }
-    ]
-  }
-};
-
-// --- DOM ELEMENTS ---
-const dom = {
-  categoryContainer: document.getElementById('categoryContainer'),
-  optionsTitle: document.getElementById('optionsTitle'),
-  optionsDescription: document.getElementById('optionsDescription'),
-  optionsContainer: document.getElementById('optionsContainer'),
-  searchQueryInput: document.getElementById('searchQuery'),
-  searchButton: document.getElementById('searchButton'),
-  copyButton: document.getElementById('copyButton'),
-  afterDateInput: document.getElementById('afterDate'),
-  beforeDateInput: document.getElementById('beforeDate'),
-  historyContainer: document.getElementById('historyContainer'),
-  favoritesContainer: document.getElementById('favoritesContainer'),
-  clearHistoryBtn: document.getElementById('clearHistoryBtn'),
-  safeModeToggle: document.getElementById('safeModeToggle'),
-  toast: document.getElementById('toast'),
-  engineChips: document.getElementById('engineChips'),
-  templateSelect: document.getElementById('templateSelect'),
-  saveTemplateBtn: document.getElementById('saveTemplateBtn'),
-  deleteTemplateBtn: document.getElementById('deleteTemplateBtn'),
-  exportBtn: document.getElementById('exportBtn'),
-  importInput: document.getElementById('importInput'),
-  cheatsToggle: document.getElementById('cheatsToggle'),
-  cheatsBody: document.getElementById('cheatsBody'),
-  cheatsList: document.getElementById('cheatsList'),
-  cheatEngineLabel: document.getElementById('cheatEngineLabel'),
-  includeTerms: document.getElementById('includeTerms'),
-  excludeTerms: document.getElementById('excludeTerms'),
-  exactPhrases: document.getElementById('exactPhrases'),
-  clearRegexBtn: document.getElementById('clearRegexBtn'),
-  queryPreview: document.getElementById('queryPreview'),
-  copyPreviewBtn: document.getElementById('copyPreviewBtn'),
-  runPreviewBtn: document.getElementById('runPreviewBtn'),
-  searchBtnLabel: document.getElementById('searchBtnLabel')
-};
-
-// --- STATE & UTILS ---
-const safeGet = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch(_) { return fallback; } };
-const safeSet = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch(_) {} };
-
-let state = {
-  activeCategory: safeGet('activeCategory', 'file_search'),
-  activeEngine: safeGet('activeEngine', 'google'),
-  selectedEngines: safeGet('selectedEngines', ['google']),
-  searchHistory: safeGet('searchHistory', []),
-  searchFavorites: safeGet('searchFavorites', []),
-  templates: safeGet('templates', []),
-  isSearching: false,
-  isSafeMode: safeGet('isSafeMode', true)
-};
-
-function showToast(message, type = 'info') {
-  dom.toast.textContent = message;
-  dom.toast.className = '';
-  dom.toast.classList.add('show', type);
-  setTimeout(() => dom.toast.classList.remove('show'), 2600);
-}
-
-// Engines chips (multi-select)
-function renderEngines() {
-  dom.engineChips.innerHTML = '';
-  Object.keys(searchEngines).forEach(key => {
-    const selected = state.selectedEngines.includes(key);
-    const btn = document.createElement('button');
-    btn.className = `engine-chip border border-gray-700 rounded-full px-3 py-1 text-sm ${selected ? 'active' : ''}`;
-    btn.setAttribute('aria-pressed', selected);
-    btn.innerHTML = `<span>${searchEngines[key].name}</span>`;
-    btn.addEventListener('click', () => toggleEngine(key));
-    dom.engineChips.appendChild(btn);
-  });
-  updateCheatsheet();
-  updateSearchBtnLabel();
-}
-
-function toggleEngine(key){
-  const idx = state.selectedEngines.indexOf(key);
-  if (idx >= 0) state.selectedEngines.splice(idx,1); else state.selectedEngines.push(key);
-  if (state.selectedEngines.length === 0) state.selectedEngines = [state.activeEngine];
-  // Primary engine = first in list
-  state.activeEngine = state.selectedEngines[0];
-  safeSet('selectedEngines', state.selectedEngines);
-  safeSet('activeEngine', state.activeEngine);
-  renderEngines();
-  renderPreview();
-}
-
-function updateCheatsheet(){
-  dom.cheatEngineLabel.textContent = searchEngines[state.activeEngine].name;
-  const list = operatorCheats[state.activeEngine] || operatorCheats.google;
-  dom.cheatsList.innerHTML = '';
-  list.forEach(item => {
-    const li = document.createElement('li');
-    li.textContent = '• ' + item;
-    dom.cheatsList.appendChild(li);
-  });
-}
-
-dom.cheatsToggle.addEventListener('click', () => {
-  const expanded = dom.cheatsBody.classList.contains('hidden');
-  dom.cheatsBody.classList.toggle('hidden');
-  dom.cheatsToggle.setAttribute('aria-expanded', String(expanded));
-});
-
-// Categories
-function renderCategories() {
-  dom.categoryContainer.innerHTML = '';
-  for (const key in searchCategories) {
-    const category = searchCategories[key];
-    if (state.isSafeMode && category.isSafe === false) continue;
-    const card = document.createElement('button');
-    card.className = `category-btn w-full text-left p-3 rounded-lg flex items-center gap-3 ${key === state.activeCategory ? 'active' : ''}`;
-    card.dataset.key = key; card.setAttribute('role','tab');
-    card.setAttribute('aria-selected', key === state.activeCategory);
-    card.innerHTML = `${icons[category.icon] || ''} <span class="font-medium">${category.name}</span>`;
-    card.addEventListener('click', () => {
-      state.activeCategory = key; safeSet('activeCategory', key);
-      document.querySelectorAll('.category-btn').forEach(c=>{c.classList.remove('active');c.setAttribute('aria-selected','false')});
-      card.classList.add('active'); card.setAttribute('aria-selected','true');
-      renderOptions(key); renderPreview(); checkSearchButtonState();
-    });
-    dom.categoryContainer.appendChild(card);
-  }
-}
-
-function renderOptions(key){
-  const category = searchCategories[key];
-  dom.optionsTitle.textContent = `2. Options for ${category.name}`;
-  dom.optionsDescription.textContent = category.description;
-  dom.searchQueryInput.placeholder = category.placeholder || 'Enter your search query...';
-  dom.optionsContainer.innerHTML = '';
-
-  if (!category.options || category.options.length === 0){
-    dom.optionsContainer.innerHTML = '<p class="text-gray-500">No specific options. Just type your query and search.</p>';
-    return;
-  }
-
-  if (key === 'file_search'){
-    const subCategoryContainer = document.createElement('div');
-    subCategoryContainer.className = 'grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4';
-    const subOptionsContainer = document.createElement('div');
-    subOptionsContainer.id = 'subOptionsContainer';
-
-    category.options.forEach((subCat) => {
-      const subCatId = `subcat_${subCat.value}`;
-      const radio = document.createElement('input');
-      radio.type='radio'; radio.id=subCatId; radio.name='file_search_type'; radio.value=subCat.value;
-      radio.checked = !!subCat.checked; radio.className='hidden';
-      radio.addEventListener('change', ()=>{ if(radio.checked){ dom.searchQueryInput.placeholder=subCat.placeholder||category.placeholder; renderSubOptions(subCat.subOptions, subOptionsContainer); renderPreview(); }});
-      const label = document.createElement('label');
-      label.htmlFor=subCatId; label.className='option-label cursor-pointer block w-full text-center p-3 border-2 border-gray-600 rounded-md text-sm font-medium';
-      label.textContent=subCat.label; label.tabIndex=0;
-      label.addEventListener('keydown', e=>{ if(e.key===' '||e.key==='Enter'){ radio.click(); e.preventDefault(); }});
-      subCategoryContainer.appendChild(radio); subCategoryContainer.appendChild(label);
-    });
-
-    dom.optionsContainer.appendChild(subCategoryContainer);
-    dom.optionsContainer.appendChild(subOptionsContainer);
-
-    const defaultSubCat = category.options.find(sc=>sc.checked) || category.options[0];
-    if(defaultSubCat){ dom.searchQueryInput.placeholder=defaultSubCat.placeholder; renderSubOptions(defaultSubCat.subOptions, subOptionsContainer); }
-
-  } else {
-    dom.optionsContainer.className = category.optionsType==='checkbox' ? 'grid grid-cols-2 sm:grid-cols-3 gap-2' : 'space-y-3';
-    category.options.forEach((option)=>{
-      const optionId = `${key}_option_${option.value}`;
-      const div = document.createElement('div');
-      const input = document.createElement('input');
-      input.type = category.optionsType; input.id=optionId; input.name=key; input.value=option.value; input.checked=!!option.checked; input.className='hidden';
-      input.addEventListener('click', ()=>{ if(input.checked){ dom.searchQueryInput.placeholder = option.placeholder || category.placeholder || 'Enter your search query...'; renderPreview(); }});
-      const label = document.createElement('label'); label.htmlFor=optionId; label.tabIndex=0; label.addEventListener('keydown', e=>{ if(e.key===' '||e.key==='Enter'){ input.click(); e.preventDefault(); }});
-      if (category.optionsType==='checkbox'){
-        label.className = 'option-label cursor-pointer block w-full text-center p-3 border-2 border-gray-600 rounded-md text-sm font-medium';
-        label.textContent = option.label;
-      } else {
-        label.className = 'option-label cursor-pointer flex items-start p-4 border-2 border-gray-700 rounded-lg';
-        label.innerHTML = `<div class='flex items-center h-5'><div class='w-4 h-4 rounded-full border-2 border-gray-500 flex-shrink-0 mr-3 radio-circle'></div></div><div><span class='font-semibold text-white'>${option.label}</span>${option.description?`<p class='text-sm text-gray-400'>${option.description}</p>`:''}</div>`;
-      }
-      div.appendChild(input); div.appendChild(label); dom.optionsContainer.appendChild(div);
-    });
-    const def = category.options.find(o=>o.checked);
-    if(def?.placeholder) dom.searchQueryInput.placeholder = def.placeholder;
-  }
-  checkSearchButtonState();
-}
-
-function renderSubOptions(subOptions, container){
-  container.innerHTML='';
-  container.className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 border-t border-gray-700 pt-4 mt-4';
-  (subOptions||[]).forEach((option, idx)=>{
-    const optionId = `sub_option_${idx}`;
-    const div = document.createElement('div');
-    const input = document.createElement('input'); input.type='checkbox'; input.id=optionId; input.name='file_search_suboption'; input.value=option.value; input.checked=!!option.checked; input.className='hidden';
-    input.addEventListener('change', renderPreview);
-    const label = document.createElement('label'); label.htmlFor=optionId; label.className='option-label cursor-pointer block w-full text-center p-3 border-2 border-gray-600 rounded-md text-sm font-medium'; label.textContent=option.label; label.tabIndex=0; label.addEventListener('keydown', e=>{ if(e.key===' '||e.key==='Enter'){ input.click(); e.preventDefault(); }});
-    div.appendChild(input); div.appendChild(label); container.appendChild(div);
-  });
-}
-
-// Build query string (engine-aware)
-function buildQueryString(engineKey){
-  const engine = engineKey || state.activeEngine;
-  const queryRaw = dom.searchQueryInput.value.trim();
-  const {include, exclude} = getRegexTerms();
-  const queryDecorated = decorateQueryWithTerms(queryRaw, include, exclude);
-  const category = searchCategories[state.activeCategory];
-  let finalQuery = '';
-
-  if (state.activeCategory === 'file_search'){
-    const subOptionsContainer = document.getElementById('subOptionsContainer');
-    if(subOptionsContainer){
-      const selectedFileTypes = Array.from(subOptionsContainer.querySelectorAll('input:checked')).map(i=>i.value);
-      if (selectedFileTypes.length>0){
-        const types = (engine==='duckduckgo') ? selectedFileTypes.map(opt=>`"${opt}"`).join(' | ') : selectedFileTypes.join(' | ');
-        finalQuery = `${category.baseQuery} (${types}) ${wrapIfNeeded(queryDecorated)}`.trim();
-      }
-    }
-  } else {
-    const selected = Array.from(dom.optionsContainer.querySelectorAll('input:checked')).map(i=>i.value);
-    const selectedOptionData = category.options ? category.options.find(opt=>opt.value===selected[0]) : null;
-    if (category.optionsType==='radio' && selectedOptionData){
-      const val = selectedOptionData.value;
-      if (selectedOptionData.isDomainTarget){
-        finalQuery = queryDecorated ? `${val}${queryDecorated}` : val.slice(0,-1);
-      } else if (selectedOptionData.isCustomHandler){
-        // handled in handleSearch
-        finalQuery = queryDecorated;
-      } else {
-        finalQuery = `${val} ${queryDecorated}`.trim();
-      }
-    } else {
-      finalQuery = `${category.baseQuery} ${wrapIfNeeded(queryDecorated)}`.trim();
-    }
-  }
-
-  // Date operators per engine
-  if (!['duckduckgo','yandex'].includes(engine)){
-    if (dom.afterDateInput.value) finalQuery += ` after:${dom.afterDateInput.value}`;
-    if (dom.beforeDateInput.value) finalQuery += ` before:${dom.beforeDateInput.value}`;
-  }
-
-  return finalQuery.trim();
-}
-
-function wrapIfNeeded(q){ return q && !q.startsWith('"') ? `"${q}"` : q; }
-
-function getRegexTerms(){
-  const include = (dom.includeTerms.value||'').split(',').map(s=>s.trim()).filter(Boolean);
-  const exclude = (dom.excludeTerms.value||'').split(',').map(s=>s.trim()).filter(Boolean);
-  return {include, exclude};
-}
-
-function decorateQueryWithTerms(base, includes, excludes){
-  const wrap = dom.exactPhrases.checked;
-  const inc = includes.map(t=> wrap ? `"${t}"` : t).join(' ');
-  const exc = excludes.map(t=> `-${t}`).join(' ');
-  return [base, inc, exc].filter(Boolean).join(' ').trim();
-}
-
-// Search & Copy
-function validateDates(){
-  if (dom.afterDateInput.value && dom.beforeDateInput.value && new Date(dom.afterDateInput.value) > new Date(dom.beforeDateInput.value)){
-    showToast('“After” date cannot be later than “Before” date.','error');
-    return false;
-  }
-  return true;
-}
-
-function handleSearch(){
-  if (state.isSearching || !validateDates()) return;
-  state.isSearching = true; setTimeout(()=> state.isSearching=false, 600);
-
-  const query = dom.searchQueryInput.value.trim();
-  const category = searchCategories[state.activeCategory];
-  const selectedOptionData = category.options ? category.options.find(opt => opt.value === dom.optionsContainer.querySelector('input:checked')?.value) : null;
-  if (selectedOptionData?.isCustomHandler && selectedOptionData.value==='wayback'){
-    if (!query) return showToast('Please enter a domain name for the Wayback Machine.','error');
-    const url = `https://web.archive.org/web/*/${query}`;
-    addToHistory({query:`Wayback Machine: ${query}`, url, date: new Date().toISOString()});
-    window.open(url,'_blank','noopener,noreferrer');
-    return;
-  }
-
-  const engines = state.selectedEngines.length ? state.selectedEngines : [state.activeEngine];
-  const opened = [];
-  engines.forEach(engineKey=>{
-    const q = buildQueryString(engineKey);
-    if (!q) return;
-    const url = searchEngines[engineKey].url + encodeURIComponent(q);
-    opened.push({engineKey, url, q});
-    window.open(url,'_blank','noopener,noreferrer');
-  });
-  if (opened.length){
-    // Only log the primary query to history for cleanliness
-    const primary = opened[0];
-    addToHistory({query: primary.q, url: primary.url, date: new Date().toISOString()});
-  } else {
-    showToast('Please enter a search query.','error');
-  }
-}
-
-function handleCopy(){
-  if (!validateDates()) return;
-  const q = buildQueryString();
-  if (!q) return showToast('Nothing to copy. Build a query first.','error');
-  navigator.clipboard.writeText(q).then(()=>showToast('Copied to clipboard!','success')).catch(()=>showToast('Failed to copy.','error'));
-}
-
-// History & Favorites
-function addToHistory(item){
-  if (!state.searchHistory.some(h=> h.query===item.query)){
-    state.searchHistory.unshift(item);
-    if (state.searchHistory.length>50) state.searchHistory.pop();
-    safeSet('searchHistory', state.searchHistory);
-    renderHistory();
-  }
-}
-
-function renderHistory(){
-  dom.historyContainer.innerHTML='';
-  if (!state.searchHistory.length){ dom.historyContainer.innerHTML='<p class="text-gray-500">Your recent searches will appear here.</p>'; return; }
-  state.searchHistory.forEach((item, index)=>{
-    const div = document.createElement('div');
-    div.className='bg-gray-800 p-2 rounded-md flex justify-between items-center text-sm';
-    const when = new Date(item.date).toLocaleString();
-    div.innerHTML = `
-      <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="truncate hover:text-blue-400 flex-1 mr-2" title="${item.query}">${item.query}</a>
-      <div class="flex items-center gap-1">
-        <span class="text-gray-500 text-xs whitespace-nowrap hidden md:inline"> · ${when}</span>
-        <button title="Add to Favorites" data-index="${index}" class="add-fav-btn icon-btn p-1 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg></button>
-      </div>`;
-    dom.historyContainer.appendChild(div);
-  });
-}
-
-function addToFavorites(index){
-  const item = state.searchHistory[index];
-  if (!state.searchFavorites.some(f=> f.query===item.query)){
-    state.searchFavorites.unshift(item);
-    safeSet('searchFavorites', state.searchFavorites);
-    renderFavorites();
-    showToast('Added to favorites!');
-  } else showToast('Already in favorites.');
-}
-
-function renderFavorites(){
-  dom.favoritesContainer.innerHTML='';
-  if (!state.searchFavorites.length){ dom.favoritesContainer.innerHTML='<p class="text-gray-500">Your saved searches will appear here.</p>'; return; }
-  state.searchFavorites.forEach((item, index)=>{
-    const div = document.createElement('div');
-    div.className='bg-gray-800 p-2 rounded-md flex justify-between items-center text-sm';
-    div.innerHTML = `
-      <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="truncate hover:text-blue-400 flex-1 mr-2" title="${item.query}">${item.query}</a>
-      <div class="flex items-center gap-1">
-        <button title="Remove Favorite" data-index="${index}" class="remove-fav-btn icon-btn p-1 rounded-full text-yellow-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg></button>
-      </div>`;
-    dom.favoritesContainer.appendChild(div);
-  });
-}
-
-function removeFavorite(index){
-  state.searchFavorites.splice(index,1);
-  safeSet('searchFavorites', state.searchFavorites);
-  renderFavorites();
-}
-
-// Templates (profiles)
-function renderTemplates(){
-  dom.templateSelect.innerHTML = '<option value="">Load template…</option>' + state.templates.map((t,i)=>`<option value="${i}">${t.name}</option>`).join('');
-}
-
-function getCurrentConfig(){
-  const categoryKey = state.activeCategory;
-  const category = searchCategories[categoryKey];
-  let selectedOption = null; let subOptions = [];
-  if (categoryKey==='file_search'){
-    const subRadio = document.querySelector('input[name="file_search_type"]:checked');
-    selectedOption = subRadio?.value || null;
-    subOptions = Array.from(document.querySelectorAll('#subOptionsContainer input[name="file_search_suboption"]:checked')).map(i=>i.value);
-  } else {
-    const checked = dom.optionsContainer.querySelector('input:checked');
-    selectedOption = checked?.value || null;
-  }
-  return {
-    name: '',
-    data: {
-      categoryKey,
-      selectedOption,
-      subOptions,
-      query: dom.searchQueryInput.value,
-      dates: { after: dom.afterDateInput.value||'', before: dom.beforeDateInput.value||'' },
-      selectedEngines: state.selectedEngines.slice(),
-      exactPhrases: dom.exactPhrases.checked,
-      includeTerms: dom.includeTerms.value,
-      excludeTerms: dom.excludeTerms.value,
-      isSafeMode: state.isSafeMode
-    }
-  };
-}
-
-function applyTemplate(t){
-  if (!t) return;
-  const d = t.data;
-  // safe mode
-  state.isSafeMode = !!d.isSafeMode; safeSet('isSafeMode', state.isSafeMode); updateSafeModeUI(false);
-  // category
-  state.activeCategory = d.categoryKey; safeSet('activeCategory', d.categoryKey);
-  renderCategories(); renderOptions(d.categoryKey);
-  // option
-  if (d.categoryKey==='file_search'){
-    const subRadio = document.getElementById(`subcat_${d.selectedOption}`);
-    if (subRadio) subRadio.click();
-    // sub options
-    const subContainer = document.getElementById('subOptionsContainer');
-    if (subContainer){
-      Array.from(subContainer.querySelectorAll('input[name="file_search_suboption"]')).forEach(i=>{ i.checked = d.subOptions?.includes(i.value) || false; });
-    }
-  } else if (d.selectedOption){
-    const target = document.getElementById(`${d.categoryKey}_option_${CSS.escape(d.selectedOption)}`);
-    if (target){ target.click(); }
-  }
-  // query & dates & regex box
-  dom.searchQueryInput.value = d.query || '';
-  dom.afterDateInput.value = d.dates?.after || '';
-  dom.beforeDateInput.value = d.dates?.before || '';
-  dom.exactPhrases.checked = !!d.exactPhrases;
-  dom.includeTerms.value = d.includeTerms || '';
-  dom.excludeTerms.value = d.excludeTerms || '';
-  // engines
-  state.selectedEngines = (d.selectedEngines && d.selectedEngines.length) ? d.selectedEngines.slice() : [state.activeEngine];
-  state.activeEngine = state.selectedEngines[0];
-  safeSet('selectedEngines', state.selectedEngines); safeSet('activeEngine', state.activeEngine);
-  renderEngines(); renderPreview(); checkSearchButtonState();
-}
-
-function saveTemplate(){
-  const name = prompt('Template name:');
-  if (!name) return;
-  const cfg = getCurrentConfig();
-  cfg.name = name.trim();
-  // de-duplicate by name
-  const existingIdx = state.templates.findIndex(t=>t.name.toLowerCase()===cfg.name.toLowerCase());
-  if (existingIdx>=0) state.templates.splice(existingIdx,1);
-  state.templates.unshift(cfg);
-  safeSet('templates', state.templates);
-  renderTemplates();
-  showToast('Template saved.','success');
-}
-
-function deleteTemplate(){
-  const idx = parseInt(dom.templateSelect.value,10);
-  if (isNaN(idx)) return showToast('Select a template to delete.','error');
-  const name = state.templates[idx]?.name || 'template';
-  if (!confirm(`Delete "${name}"?`)) return;
-  state.templates.splice(idx,1); safeSet('templates', state.templates); renderTemplates(); showToast('Template deleted.');
-}
-
-// Export / Import
-function exportData(){
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    version: 'v3.1',
-    state: {
-      activeCategory: state.activeCategory,
-      activeEngine: state.activeEngine,
-      selectedEngines: state.selectedEngines,
-      isSafeMode: state.isSafeMode
-    },
-    history: state.searchHistory,
-    favorites: state.searchFavorites,
-    templates: state.templates
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-  a.download = `advanced-search-hub-export-${ts}.json`;
-  document.body.appendChild(a); a.click(); a.remove();
-}
-
-function importData(file){
-  const reader = new FileReader();
-  reader.onload = () => {
-    try{
-      const data = JSON.parse(reader.result);
-      if (data.templates){
-        // merge templates by name
-        const byName = new Map(state.templates.map(t=>[t.name.toLowerCase(), t]));
-        (data.templates||[]).forEach(t=>{ byName.set((t.name||'').toLowerCase(), t); });
-        state.templates = Array.from(byName.values());
-        safeSet('templates', state.templates);
-      }
-      if (data.history && confirm('Replace current history with imported history?')){
-        state.searchHistory = data.history; safeSet('searchHistory', state.searchHistory);
-      }
-      if (data.favorites && confirm('Replace current favorites with imported favorites?')){
-        state.searchFavorites = data.favorites; safeSet('searchFavorites', state.searchFavorites);
-      }
-      renderTemplates(); renderHistory(); renderFavorites();
-      showToast('Import complete.','success');
-    } catch(e){ showToast('Invalid JSON file.','error'); }
-  };
-  reader.readAsText(file);
-}
-
-// Preview block
-function renderPreview(){
-  const q = buildQueryString();
-  dom.queryPreview.textContent = q || '—';
-}
-
-function updateSearchBtnLabel(){
-  const n = state.selectedEngines.length || 1;
-  dom.searchBtnLabel.textContent = n>1 ? `Search (${n} engines)` : 'Search';
-}
-
-// Safe mode UI
-function updateSafeModeUI(rerenderCategories = true){
-  const toggle = dom.safeModeToggle; const knob = toggle.querySelector('span:not(.sr-only)');
-  if (state.isSafeMode){ toggle.classList.remove('bg-gray-600'); toggle.classList.add('bg-green-500'); toggle.setAttribute('aria-checked','true'); knob.classList.add('translate-x-6'); knob.classList.remove('translate-x-1'); }
-  else { toggle.classList.remove('bg-green-500'); toggle.classList.add('bg-gray-600'); toggle.setAttribute('aria-checked','false'); knob.classList.add('translate-x-1'); knob.classList.remove('translate-x-6'); }
-  if (rerenderCategories){
-    renderCategories();
-    if (state.isSafeMode && searchCategories[state.activeCategory]?.isSafe===false){ state.activeCategory='file_search'; safeSet('activeCategory', state.activeCategory); }
-    renderOptions(state.activeCategory);
-  }
-}
-
-function checkSearchButtonState(){
-  const query = dom.searchQueryInput.value.trim();
-  const category = searchCategories[state.activeCategory];
-  const selectedOptionData = category.options ? category.options.find(opt=> opt.value === dom.optionsContainer.querySelector('input:checked')?.value) : null;
-  const requiresQuery = selectedOptionData?.isDomainTarget || selectedOptionData?.isCustomHandler;
-  dom.searchButton.disabled = !!(requiresQuery && !query);
-  updateSearchBtnLabel();
-}
-
-// Event listeners
-
-dom.searchButton.addEventListener('click', ()=>{ handleSearch(); });
-dom.copyButton.addEventListener('click', handleCopy);
-dom.searchQueryInput.addEventListener('input', () => {
-    checkSearchButtonState();
-    renderPreview();
-});
-
-dom.afterDateInput.addEventListener('change', ()=>{ renderPreview(); });
-dom.beforeDateInput.addEventListener('change', ()=>{ renderPreview(); });
-[dom.includeTerms, dom.excludeTerms, dom.exactPhrases].forEach(el=> el.addEventListener('input', renderPreview));
-
-dom.clearHistoryBtn.addEventListener('click', ()=>{
-  if (confirm('Are you sure you want to clear your search history?')){
-    state.searchHistory = []; safeSet('searchHistory', []); renderHistory();
-  }
-});
-
-dom.historyContainer.addEventListener('click', e=>{
-  const addBtn = e.target.closest('.add-fav-btn'); if(addBtn) addToFavorites(addBtn.dataset.index);
-});
-
-dom.favoritesContainer.addEventListener('click', e=>{
-  const removeBtn = e.target.closest('.remove-fav-btn'); if(removeBtn) removeFavorite(removeBtn.dataset.index);
-});
-
-dom.safeModeToggle.addEventListener('click', ()=>{ state.isSafeMode = !state.isSafeMode; safeSet('isSafeMode', state.isSafeMode); updateSafeModeUI(); renderPreview(); });
-
-dom.templateSelect.addEventListener('change', ()=>{
-  const idx = parseInt(dom.templateSelect.value,10);
-  if (!isNaN(idx)) applyTemplate(state.templates[idx]);
-});
-
-dom.saveTemplateBtn.addEventListener('click', saveTemplate);
-dom.deleteTemplateBtn.addEventListener('click', deleteTemplate);
-dom.exportBtn.addEventListener('click', exportData);
-dom.importInput.addEventListener('change', (e)=>{ const f=e.target.files?.[0]; if(f) importData(f); e.target.value=''; });
-
-dom.copyPreviewBtn.addEventListener('click', ()=>{
-  const q = dom.queryPreview.textContent; if (!q || q==='—') return showToast('Nothing to copy.','error');
-  navigator.clipboard.writeText(q).then(()=>showToast('Copied preview!','success')).catch(()=>showToast('Copy failed.','error'));
-});
-
-dom.runPreviewBtn.addEventListener('click', ()=>{
-  const q = buildQueryString(); if(!q) return showToast('No query to run.','error');
-  const url = searchEngines[state.activeEngine].url + encodeURIComponent(q);
-  addToHistory({query:q, url, date:new Date().toISOString()});
-  window.open(url,'_blank','noopener,noreferrer');
-});
-
-// Keyboard shortcuts
-window.addEventListener('keydown', (e)=>{
-  if (e.key === '/' && document.activeElement !== dom.searchQueryInput){ e.preventDefault(); dom.searchQueryInput.focus(); return; }
-  if ((e.ctrlKey||e.metaKey) && e.key === 'Enter'){ e.preventDefault(); handleSearch(); return; }
-  if (e.altKey && (e.key==='s' || e.key==='S')){ e.preventDefault(); dom.safeModeToggle.click(); return; }
-  const map = { g:'google', b:'bing', d:'duckduckgo', y:'yandex' };
-  if (e.altKey && map[e.key.toLowerCase()]){ 
-      e.preventDefault(); 
-      const engineKey = map[e.key.toLowerCase()];
-      state.selectedEngines = [engineKey]; 
-      state.activeEngine = engineKey; 
-      safeSet('selectedEngines', state.selectedEngines); 
-      safeSet('activeEngine', state.activeEngine); 
-      renderEngines(); 
-      renderPreview(); 
-  }
-});
-
-dom.clearRegexBtn.addEventListener('click', ()=>{ dom.includeTerms.value=''; dom.excludeTerms.value=''; dom.exactPhrases.checked=false; renderPreview(); });
-
-// INIT
-(function init(){
-  renderEngines();
-  updateCheatsheet();
-  renderCategories();
-  renderOptions(state.activeCategory);
-  renderHistory();
-  renderFavorites();
-  renderTemplates();
-  renderPreview();
-  checkSearchButtonState();
-})();
-</script>
+    <!-- Main JS loaded at the end for best practice -->
+    <script type="module" src="src/js/main.js"></script>
 </body>
 </html>

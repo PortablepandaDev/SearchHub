@@ -1,0 +1,259 @@
+you’ve clearly put actual thought into this (miracles do happen). It’s a slick single-file app with decent UX bones. Now here’s the ruthless audit: what’s great, what’s broken, what’s risky, and what you should build next.
+
+The quick wins (do these first)
+
+Fix the version mismatch. Title says v3.2, export payload says v3.1. Pick one. Consistency, darling.
+
+Stop XSSing yourself. You inject user-provided strings into innerHTML (history, template names). That’s an instant payload party.
+
+Make date filters engine-aware. You’re blindly appending after:/before: to Bing as if it were Google. Engines differ. Map them.
+
+Don’t quote operators by accident. Your wrapIfNeeded() can wrap site:/filetype: etc and neuter them.
+
+CSP is mostly decorative right now. You shipped 'unsafe-inline' in script-src and style-src. That’s like locking the front door but leaving the walls off.
+
+Security & privacy (tighten it up)
+
+Harden CSP
+
+Move the inline <script> to an external file and drop 'unsafe-inline'.
+
+Add base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests; object-src 'none'.
+
+Add SRI to CDNs or (better) self-host Tailwind build + fonts.
+
+Example (tighter but still works with external JS/CSS):
+
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' https://cdn.tailwindcss.com https://unpkg.com;
+  style-src 'self' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  img-src 'self' data:;
+  connect-src 'self';
+  base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+">
+
+
+Sanitize DOM writes
+
+Replace risky innerHTML where user data touches the DOM (history, favorites, templates). Use textContent and real nodes:
+
+function historyRow(item, index){
+  const row = document.createElement('div');
+  row.className = 'bg-gray-800 p-2 rounded-md flex justify-between items-center text-sm';
+
+  const link = document.createElement('a');
+  link.href = item.url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.className = 'truncate hover:text-blue-400 flex-1 mr-2';
+  link.title = item.query;
+  link.textContent = item.query;
+
+  const btn = document.createElement('button');
+  btn.title = 'Add to Favorites';
+  btn.dataset.index = index;
+  btn.className = 'add-fav-btn icon-btn p-1 rounded-full';
+  btn.innerHTML = `<svg ...>...</svg>`; // static, safe
+
+  const right = document.createElement('div');
+  right.className = 'flex items-center gap-1';
+  const when = document.createElement('span');
+  when.className = 'text-gray-500 text-xs whitespace-nowrap hidden md:inline';
+  when.textContent = ` · ${new Date(item.date).toLocaleString()}`;
+
+  right.append(when, btn);
+  row.append(link, right);
+  return row;
+}
+
+
+Wayback input validation
+
+Users will paste nonsense. Validate domain/URL and encodeURIComponent() the domain only.
+
+Permissions/Referrer policies
+
+Add:
+
+<meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
+<meta http-equiv="Cross-Origin-Resource-Policy" content="same-origin">
+
+Correctness bugs & logic polish
+
+Engine-specific dates. Centralise date rendering:
+
+function withDateFilter(engine, query, after, before){
+  if(!after && !before) return query;
+  if(engine === 'google'){
+    // tbs=cdr for custom date range; format MM/DD/YYYY
+    const mmdd = s => new Date(s).toLocaleDateString('en-US');
+    const tbs = `&tbs=cdr:1${after?`,cd_min:${mmdd(after)}`:''}${before?`,cd_max:${mmdd(before)}`:''}`;
+    return { query, extraQueryString: tbs };
+  }
+  if(engine === 'bing'){
+    // Bing has no reliable 'after:' operator; punt and prefer UI filter.
+    // Option: push 'after:YYYY-MM-DD' as literal term OFF by default (confusing), or omit.
+    return { query, extraQueryString: '' };
+  }
+  return { query, extraQueryString: '' };
+}
+
+
+Then consume extraQueryString when building the URL.
+
+Don’t quote the whole term block. Only quote include tokens when “Wrap includes in quotes” is ticked—never the user’s entire query. Your wrapIfNeeded() currently risks smothering operators.
+
+function decorateQuery(base, includes, excludes, wrapPhrases){
+  const inc = includes.map(t => wrapPhrases ? `"${t}"` : t);
+  const exc = excludes.map(t => `-${t}`);
+  return [base, ...inc, ...exc].filter(Boolean).join(' ').trim();
+}
+
+
+Subdomain builder. Your isDomainTarget currently yields site:*. + entire decorated blob. That’s wrong.
+
+function subdomainQuery(domain){ // expects example.com
+  const d = domain.replace(/^https?:\/\//,'').replace(/\/.*$/,'');
+  return `site:*.${d}`;
+}
+
+
+Combine that with the rest of the terms (not quoted).
+
+Multi-engine open pop-up limits. Some browsers nuke multiple window.open calls. If more than one engine is selected, show a toast warning and optionally open in a staggered setTimeout.
+
+UX & accessibility upgrades
+
+Rename “Regex helper”. It’s not regex. Call it “Term filters” or “Include/Exclude”.
+
+Keyboard a11y
+
+Engine chips: add arrow-key navigation (roving tabindex).
+
+Toast: add role="status" aria-live="polite".
+
+“Operators cheatsheet”: tie aria-controls to the body, update aria-expanded.
+
+Color contrast/focus
+Ensure visible focus rings on dark background (Tailwind’s focus-visible:ring-offset-2 ring-offset-gray-900 ring-blue-500).
+
+URL sharing
+Support deep-linking current state with ?state=<base64-json>, and load it on init if present.
+
+i18n
+Date pickers and toLocaleString() already help; add a language dropdown to switch operator wording/examples.
+
+Performance & code health
+
+Modularise for real. Split into state.js, engines.js (mappings & operator rules), render.js, actions.js. Your current code reads modular but lives as a monolith.
+
+Debounce localStorage. Wrap safeSet with a micro-debounce to avoid spamming on rapid UI changes.
+
+Event delegation. You’re already close; finish it (favorites/history buttons) to avoid re-attaching handlers on re-renders.
+
+Immutable state updates. For predictability (and easier testing), avoid in-place mutations where practical.
+
+Smart features to add (the fun stuff)
+
+Engine packs
+
+YouTube, Google Scholar, arXiv, PubMed, Stack Overflow, NPM, PyPI, Rust Docs, MDN, Hacker News, News tab. Each with proper operators and date handling.
+
+Query macros
+
+Allow @pdf @gov @after:2023-01-01 "wildfire" → expands to filetype:pdf site:.gov after:2023-01-01 "wildfire". User-editable macros saved in templates.
+
+Syntax translator
+
+Build once, search many: author query in neutral syntax → converted per engine. (E.g., filetype: vs ext: vs mime:).
+
+Safe Mode++
+
+Keep your “spicy” categories behind a second confirm (checkbox “I will use this responsibly”), log the consent timestamp into localStorage, and show a legal/ethical reminder.
+
+Collections
+
+Group favorites into named collections; export/import just a collection.
+
+PWA
+
+Service Worker caching + install prompt so this becomes a tiny offline utility.
+
+Query history search & tags
+
+Tag history items (#osint, #video), filter by tag, quick-jump.
+
+Shortcut palette
+
+Press ? to open a modal listing all shortcuts; add Alt+1..9 to jump categories.
+
+Copy variants
+
+Buttons to Copy (Google), Copy (Bing), Copy (DDG) with translated syntax.
+
+Live “did you mean”
+
+Optional: naive linting (warn if quotes are unbalanced, if you mixed site: and quoted it, etc.).
+
+Targeted code patches (drop-in)
+
+1) Engine mapping + URL builder
+
+const ENGINE = {
+  google: { name:'Google', base:'https://www.google.com/search?q=', date: (a,b)=> {
+    if(!a && !b) return '';
+    const mmdd = s => new Date(s).toLocaleDateString('en-US');
+    return `&tbs=cdr:1${a?`,cd_min:${mmdd(a)}`:''}${b?`,cd_max:${mmdd(b)}`:''}`;
+  }},
+  bing:   { name:'Bing',   base:'https://www.bing.com/search?q=', date: ()=> '' },
+  duckduckgo:{ name:'DuckDuckGo', base:'https://duckduckgo.com/?q=', date: ()=> '' },
+  yandex: { name:'Yandex', base:'https://yandex.com/search/?text=', date: ()=> '' }
+};
+
+function buildURL(engineKey, query, after, before){
+  const e = ENGINE[engineKey];
+  return e.base + encodeURIComponent(query) + (e.date(after,before) || '');
+}
+
+
+2) Safer include/exclude (no operator quoting)
+
+function buildUserTerms(){
+  const base = dom.searchQueryInput.value.trim();
+  const inc = (dom.includeTerms.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const exc = (dom.excludeTerms.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const wrap = dom.exactPhrases.checked;
+
+  const incTerms = inc.map(t => wrap ? `"${t}"` : t);
+  const excTerms = exc.map(t => `-${t}`);
+  return [base, ...incTerms, ...excTerms].filter(Boolean).join(' ');
+}
+
+
+3) Subdomain builder
+
+function buildSubdomainBlock(input){
+  const domain = input.replace(/^https?:\/\//,'').replace(/\/.*$/,'');
+  return `site:*.${domain}`;
+}
+
+
+4) Toast a11y
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+Tiny nits (because I’m thorough and you love it)
+
+Rename Regex helper label.
+
+state.isSearching with a 600ms timer is cosmetic. Either disable the button until run completes or drop it.
+
+Ensure engineChips are reorderable by drag so “primary = first selected” is actually manageable.
+
+Add a “Clear dates” control.
+
+When Safe Mode hides a selected category, also show a small inline notice (“Category hidden by Safe Mode”).
