@@ -29,6 +29,14 @@ SearchHub is a customizable, privacy-respecting search interface that lets you f
 
 ## Changelog
 
+### v1.2.0 (2025-08-18)
+- Wayback Machine option now opens the correct URL, with input validation and domain extraction.
+- All DOM writes in history, favorites, and templates are fully sanitized (no user data in innerHTML).
+- Fixed all option selector errors (no more querySelector crashes).
+- Added a favicon to remove browser 404 errors.
+- Fixed subOptionsContainer bug and improved UI logic.
+- General UI and security improvements.
+
 ### v1.1.0 (2025-08-18)
 - Fixed option highlighting for all categories and sub-options
 - Improved selector safety for special characters in option values
