@@ -16,6 +16,9 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
       showToast && showToast('No search engine selected', 'error');
       return { success: false, error: 'No engines selected' };
     }
+    if (engines.length > 1) {
+      showToast && showToast('Multiple engines: Your browser may block pop-ups. Allow pop-ups for best results.', 'warning');
+    }
 
     // Custom handler for Wayback Machine
     if (state.activeCategory === 'intelligence' && state.categories['intelligence']) {
