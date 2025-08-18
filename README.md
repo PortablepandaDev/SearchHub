@@ -1,4 +1,3 @@
-
 # SearchHub
 
 SearchHub is a customizable, privacy-respecting search interface that lets you fire complex queries across multiple engines from one place. Built for researchers, OSINT enthusiasts, and anyone who’s tired of retyping the same query on multiple sites.
@@ -28,6 +27,11 @@ SearchHub is a customizable, privacy-respecting search interface that lets you f
 - Adjust UI styles in `src/css/style.css`.
 
 ## Changelog
+
+### v1.3.0 (2025-08-18)
+- Multi-engine search now preserves advanced search syntax (quotes, operators, etc.) for all engines.
+- Added a tooltip next to the search button to inform users about browser popup blockers and how to allow multi-tab search.
+- Improved compatibility for advanced queries on DuckDuckGo, Bing, and others.
 
 ### v1.2.0 (2025-08-18)
 - Wayback Machine option now opens the correct URL, with input validation and domain extraction.
