@@ -3,6 +3,10 @@ export function renderOptions(key, state, dom, buildQueryString, renderPreview, 
 
   const category = state.categories[key];
   // Hide options for unsafe categories in Safe Mode
+  if (!category) {
+    console.error('Category not found:', key);
+    return;
+  }
   if (state.isSafeMode && category.isSafe === false) {
     dom.optionsTitle.textContent = `2. Options for ${category.name}`;
     dom.optionsDescription.textContent = category.description;
