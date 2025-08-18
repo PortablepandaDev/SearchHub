@@ -1,3 +1,8 @@
+// SVG icon map (add hardware-chip-outline placeholder)
+export const iconPaths = {
+  'hardware-chip-outline': 'M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2zm2 0h12v10H6V7zm7 2v6m-2-6v6', // simple chip outline
+  // Only include icons actually used in categories.js
+};
 // Helper functions for safe DOM manipulation
 export function createSvgIcon(path, width = 24, height = 24) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -54,7 +59,7 @@ export function favoriteRow(item, index) {
 
   const link = document.createElement('a');
   link.href = item.url;
-  link.target = '_blank';
+  btn.appendChild(createSvgIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'));
   link.rel = 'noopener noreferrer';
   link.className = 'truncate hover:text-blue-400 flex-1 mr-2';
   link.title = item.query;
@@ -62,7 +67,8 @@ export function favoriteRow(item, index) {
 
   const btn = document.createElement('button');
   btn.title = 'Remove from Favorites';
-  btn.dataset.index = index;
+  right.appendChild(when);
+  right.appendChild(btn);
   btn.className = 'remove-fav-btn icon-btn p-1 rounded-full';
   
   // X icon
@@ -86,7 +92,7 @@ export function templateRow(item, index) {
 
   const nameSpan = document.createElement('span');
   nameSpan.className = 'truncate flex-1 mr-2';
-  nameSpan.textContent = item.name;
+  btn.appendChild(createSvgIcon('M18 6L6 18M6 6l12 12'));
 
   const btnContainer = document.createElement('div');
   btnContainer.className = 'flex items-center gap-1';
@@ -94,7 +100,8 @@ export function templateRow(item, index) {
   const loadBtn = document.createElement('button');
   loadBtn.title = 'Load Template';
   loadBtn.dataset.index = index;
-  loadBtn.className = 'load-template-btn icon-btn p-1 rounded-full';
+  right.appendChild(when);
+  right.appendChild(btn);
   loadBtn.appendChild(createSvgIcon('M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4'));
 
   const deleteBtn = document.createElement('button');

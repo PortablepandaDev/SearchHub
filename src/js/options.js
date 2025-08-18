@@ -56,37 +56,39 @@ export function renderOptions(key, state, dom, buildQueryString, renderPreview, 
     // Render subOptions for the selected file type
     const selectedSubCat = category.options.find(opt => opt.checked) || category.options[0];
     if (selectedSubCat && selectedSubCat.subOptions) {
-      const subOptionsContainer = document.createElement('div');
-      subOptionsContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 border-t border-gray-700 pt-4 mt-4';
-      selectedSubCat.subOptions.forEach((option, idx) => {
-        const optionId = `sub_option_${key}_${selectedSubCat.label.replace(/\s+/g, '_')}_${idx}`; // Use safe ID
-        const div = document.createElement('div');
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.id = optionId;
-        input.name = 'file_search_suboption';
-        input.value = option.value;
-        input.checked = !!option.checked;
-        input.className = 'hidden';
-        const label = document.createElement('label');
-        label.htmlFor = optionId;
-        label.className = 'option-btn cursor-pointer block w-full text-center p-3 border-2 border-gray-600 rounded-md text-sm font-medium' + (option.checked ? ' active bg-blue-600 text-white' : '');
-        label.textContent = option.label;
-        label.tabIndex = 0;
-        input.addEventListener('change', () => {
-          option.checked = input.checked;
-          if (input.checked) {
-            label.classList.add('active', 'bg-blue-600', 'text-white');
-          } else {
-            label.classList.remove('active', 'bg-blue-600', 'text-white');
-          }
-          renderPreview(state, dom, buildQueryString);
+      if (selectedSubCat.subOptions.length > 0) {
+        const subOptionsContainer = document.createElement('div');
+        subOptionsContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 border-t border-gray-700 pt-4 mt-4';
+        selectedSubCat.subOptions.forEach((option, idx) => {
+          const optionId = `sub_option_${key}_${selectedSubCat.label.replace(/\s+/g, '_')}_${idx}`; // Use safe ID
+          const div = document.createElement('div');
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.id = optionId;
+          input.name = 'file_search_suboption';
+          input.value = option.value;
+          input.checked = !!option.checked;
+          input.className = 'hidden';
+          const label = document.createElement('label');
+          label.htmlFor = optionId;
+          label.className = 'option-btn cursor-pointer block w-full text-center p-3 border-2 border-gray-600 rounded-md text-sm font-medium' + (option.checked ? ' active bg-blue-600 text-white' : '');
+          label.textContent = option.label;
+          label.tabIndex = 0;
+          input.addEventListener('change', () => {
+            option.checked = input.checked;
+            if (input.checked) {
+              label.classList.add('active', 'bg-blue-600', 'text-white');
+            } else {
+              label.classList.remove('active', 'bg-blue-600', 'text-white');
+            }
+            renderPreview(state, dom, buildQueryString);
+          });
+          div.appendChild(input);
+          div.appendChild(label);
+          subOptionsContainer.appendChild(div);
         });
-        div.appendChild(input);
-        div.appendChild(label);
-        subOptionsContainer.appendChild(div);
-      });
-      dom.optionsContainer.appendChild(subOptionsContainer);
+        dom.optionsContainer.appendChild(subOptionsContainer);
+      }
     }
     checkSearchButtonState && checkSearchButtonState();
     return;
@@ -97,7 +99,7 @@ export function renderOptions(key, state, dom, buildQueryString, renderPreview, 
   optionsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2';
 
   category.options.forEach((option, idx) => {
-    const optionId = `${key}_option_${option.value}`;
+  const optionId = `${key}_option_${idx}`; // Use index for safe ID
     const div = document.createElement('div');
     const input = document.createElement('input');
     input.type = category.optionsType || 'radio';
@@ -114,12 +116,20 @@ export function renderOptions(key, state, dom, buildQueryString, renderPreview, 
     label.textContent = option.label;
     label.tabIndex = 0;
 
+    // Add warning for DuckDuckGo PDF search limitation
+    if ((option.label === 'Gov Docs' || option.label === 'Edu Docs')) {
+      const warn = document.createElement('div');
+      warn.className = 'text-xs text-yellow-400 mt-1';
+      warn.textContent = 'Note: DuckDuckGo may not fully support filetype:pdf. Results may be limited.';
+      div.appendChild(warn);
+    }
+
     input.addEventListener('change', () => {
       if (input.type === 'radio') {
-        // For radio buttons, first update all options and labels
+        // For radio buttons, first update all options and labels by index
         category.options.forEach((opt, i) => {
-          const otherInput = document.querySelector(`input[id="${key}_option_${opt.value}"]`);
-          const otherLabel = document.querySelector(`label[for="${key}_option_${opt.value}"]`);
+          const otherInput = document.getElementById(`${key}_option_${i}`);
+          const otherLabel = document.querySelector(`label[for="${key}_option_${i}"]`);
           if (otherInput && otherLabel) {
             opt.checked = otherInput === input;
             if (opt.checked) {

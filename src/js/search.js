@@ -15,6 +15,46 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
       return { success: false, error: 'No engines selected' };
     }
 
+    // Custom handler for Wayback Machine
+    if (state.activeCategory === 'intelligence' && state.categories['intelligence']) {
+      const selected = state.categories['intelligence'].options.find(opt => opt.checked);
+      if (selected && selected.label === 'Wayback Machine') {
+        // Validate input as domain or URL
+        let input = dom.searchQuery.value.trim();
+        if (!input) {
+          showToast && showToast('Please enter a domain or URL', 'error');
+          return { success: false, error: 'No input' };
+        }
+        // Extract domain from URL if needed
+        try {
+          let domain = input;
+          if (/^https?:\/\//.test(input)) {
+            domain = (new URL(input)).hostname;
+          } else if (/[^.]+\.[^.]+/.test(input)) {
+            // Looks like a domain
+            domain = input;
+          } else {
+            showToast && showToast('Enter a valid domain or URL', 'error');
+            return { success: false, error: 'Invalid domain' };
+          }
+          const url = `https://web.archive.org/web/*/${encodeURIComponent(domain)}`;
+          window.open(url, '_blank', 'noopener,noreferrer');
+          if (addToHistory) {
+            addToHistory(
+              { query: input, url, date: new Date().toISOString() },
+              state,
+              () => {}
+            );
+          }
+          showToast && showToast('Wayback Machine opened!', 'success');
+          return { success: true, urls: [url] };
+        } catch (err) {
+          showToast && showToast('Invalid URL', 'error');
+          return { success: false, error: 'Invalid URL' };
+        }
+      }
+    }
+
     // Track opened URLs for returning
     const urls = [];
 
