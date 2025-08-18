@@ -12,7 +12,7 @@ import { renderPreview } from './preview.js';
 import { handleSearch, handleCopy } from './search.js';
 import { registerEventListeners } from './events.js';
 import { safeGet, safeSet, showToast } from './utils.js';
-import { buildQueryString } from './query.js';
+import { buildQueryString, adaptQueryForEngine } from './query.js';
 import { DorkLibrary } from './components/DorkLibrary.js';
 import { QuerySuggester } from './components/QuerySuggester.js';
 import { GitHubSearch } from './components/GitHubSearch.js';
@@ -47,6 +47,9 @@ const dom = {
   exactPhrases: document.getElementById('exactPhrases'),
   clearRegexBtn: document.getElementById('clearRegexBtn'),
   queryPreview: document.getElementById('queryPreview'),
+  copyGoogleBtn: null,
+  copyBingBtn: null,
+  copyDDGBtn: null,
   copyPreviewBtn: document.getElementById('copyPreviewBtn'),
   runPreviewBtn: document.getElementById('runPreviewBtn'),
   searchBtnLabel: document.getElementById('searchBtnLabel'),
@@ -238,6 +241,7 @@ async function init() {
       dom.searchQuery.addEventListener('input', () => {
         renderPreviewWithQuery();
         checkSearchButtonState();
+        showQueryLintAndSuggestions();
       });
 
       // Add keyboard shortcut
@@ -246,6 +250,39 @@ async function init() {
           handleSearch(state, dom, buildQueryString, addToHistory, showToast);
         }
       });
+    }
+
+    // Lint and suggestion UI
+    let lintDiv = document.getElementById('query-lint');
+    if (!lintDiv) {
+      lintDiv = document.createElement('div');
+      lintDiv.id = 'query-lint';
+      lintDiv.className = 'text-xs mt-1';
+      dom.searchQuery.parentNode.appendChild(lintDiv);
+    }
+
+    function showQueryLintAndSuggestions() {
+      const q = dom.searchQuery.value;
+      let warnings = [];
+      let suggestions = [];
+      // Naive lint: unbalanced quotes
+      const quoteCount = (q.match(/"/g) || []).length;
+      if (quoteCount % 2 !== 0) warnings.push('Unbalanced quotes detected.');
+      // Naive lint: quoted site:
+      if (/"site:[^\s"]+"/.test(q)) warnings.push('Do not quote site: operators.');
+      // Naive lint: empty query
+      if (!q.trim()) warnings.push('Query is empty.');
+      // Naive "did you mean" (simple: double spaces, common typos)
+      if (/\s{2,}/.test(q)) suggestions.push('Did you mean: remove extra spaces?');
+      if (/\bsite\s*:\s*\./.test(q)) suggestions.push('Did you mean: site:example.com?');
+      // Show
+      lintDiv.innerHTML = '';
+      if (warnings.length) {
+        lintDiv.innerHTML += `<div class='text-red-400'>${warnings.map(w=>`⚠️ ${w}`).join('<br>')}</div>`;
+      }
+      if (suggestions.length) {
+        lintDiv.innerHTML += `<div class='text-yellow-300 mt-1'>${suggestions.map(s=>`💡 ${s}`).join('<br>')}</div>`;
+      }
     }
 
     // Helper to always call renderPreview with buildQueryString
@@ -439,6 +476,46 @@ window.applySuggestion = function(suggestion) {
   if (dom.searchQueryInput) {
     dom.searchQueryInput.value = suggestion;
     renderPreview(state, dom, buildQueryString);
+    // Add copy variant buttons below preview if not present
+    setTimeout(() => {
+      const preview = dom.queryPreview;
+      if (!preview) return;
+      let btnRow = document.getElementById('copy-variants-row');
+      if (!btnRow) {
+        btnRow = document.createElement('div');
+        btnRow.id = 'copy-variants-row';
+        btnRow.className = 'flex gap-2 mt-2';
+        // Google
+        const gBtn = document.createElement('button');
+        gBtn.textContent = 'Copy (Google)';
+        gBtn.className = 'px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs';
+        gBtn.onclick = () => copyVariant('google');
+        // Bing
+        const bBtn = document.createElement('button');
+        bBtn.textContent = 'Copy (Bing)';
+        bBtn.className = 'px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs';
+        bBtn.onclick = () => copyVariant('bing');
+        // DDG
+        const dBtn = document.createElement('button');
+        dBtn.textContent = 'Copy (DDG)';
+        dBtn.className = 'px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs';
+        dBtn.onclick = () => copyVariant('duckduckgo');
+        btnRow.append(gBtn, bBtn, dBtn);
+        preview.parentNode.insertBefore(btnRow, preview.nextSibling);
+        dom.copyGoogleBtn = gBtn;
+        dom.copyBingBtn = bBtn;
+        dom.copyDDGBtn = dBtn;
+      }
+    }, 0);
+
+    // Copy variant handler
+    function copyVariant(engine) {
+      const q = buildQueryString(state, dom);
+      const translated = adaptQueryForEngine(q, engine);
+      navigator.clipboard.writeText(translated)
+        .then(() => showToast && showToast(`Copied for ${engine.charAt(0).toUpperCase() + engine.slice(1)}!`, 'success'))
+        .catch(() => showToast && showToast('Failed to copy.', 'error'));
+    }
     dom.suggestionsList.style.display = 'none';
   }
 };
