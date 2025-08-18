@@ -1,6 +1,7 @@
 // Query preview logic
 export function renderPreview(state, dom, buildQueryString) {
-  const q = buildQueryString(state, dom);
+    if (!dom.queryPreview) return;  // Exit early if element doesn't exist
+    
     const query = buildQueryString(state, dom);
     dom.queryPreview.textContent = query;
     if (query && dom.queryPreview.classList.contains('hidden')) {
