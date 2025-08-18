@@ -28,6 +28,13 @@ SearchHub is a customizable, privacy-respecting search interface that lets you f
 
 ## Changelog
 
+### v1.4.0 (2025-08-18)
+- Improved engine selection with robust event delegation
+- Enhanced AI suggestion functionality for better reliability
+- Fixed search functionality and engine handling across multiple components
+- Optimized query building and search execution logic
+- Updated state management for better user experience
+
 ### v1.3.0 (2025-08-18)
 - Multi-engine search now preserves advanced search syntax (quotes, operators, etc.) for all engines.
 - Added a tooltip next to the search button to inform users about browser popup blockers and how to allow multi-tab search.
