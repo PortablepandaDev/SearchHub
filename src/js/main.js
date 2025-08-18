@@ -18,6 +18,7 @@ import { QuerySuggester } from './components/QuerySuggester.js';
 import { GitHubSearch } from './components/GitHubSearch.js';
 import { ResultPreviewer } from './components/ResultPreviewer.js';
 import { SearchEngine } from './components/SearchEngine.js';
+import { AISuggester } from './components/AISuggester.js';
 
 // DOM references
 const dom = {
@@ -60,6 +61,8 @@ const dom = {
   dorkLibrary: document.getElementById('dorkLibrary'),
   githubResults: document.getElementById('githubResults'),
   resultPreviews: document.getElementById('resultPreviews'),
+  aiSuggestBtn: document.getElementById('aiSuggestBtn'),
+  aiSuggestBox: document.getElementById('aiSuggestBox'),
 };
 
 const state = {
@@ -128,6 +131,7 @@ const dorkLibrary = new DorkLibrary();
 const querySuggester = new QuerySuggester();
 const githubSearch = new GitHubSearch();
 const resultPreviewer = new ResultPreviewer();
+const aiSuggester = new AISuggester();
 
 // Utility functions
 
@@ -318,7 +322,12 @@ async function init() {
 }
 
 // Initialize on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  // Ensure AI Suggest button and box are assigned
+  dom.aiSuggestBtn = document.getElementById('aiSuggestBtn');
+  dom.aiSuggestBox = document.getElementById('aiSuggestBox');
+  init();
+});
 
 // Handle search results for previews and GitHub integration
 async function handleSearchResults(results) {
@@ -477,6 +486,40 @@ async function generatePreviews(urls) {
 
   dom.resultPreviews.innerHTML = html;
 }
+
+// --- AI Suggester integration ---
+function showAISuggestions() {
+  const query = dom.searchQuery.value.trim();
+  const category = state.activeCategory;
+  dom.aiSuggestBox.innerHTML = '<div class="text-gray-400 text-xs">Thinking...</div>';
+  aiSuggester.suggest(query, category).then(suggestions => {
+    dom.aiSuggestBox.innerHTML = suggestions.map(s => `<div class="ai-suggestion cursor-pointer hover:bg-blue-700 p-2 rounded">${s}</div>`).join('');
+    // Click to insert suggestion
+    Array.from(dom.aiSuggestBox.querySelectorAll('.ai-suggestion')).forEach(el => {
+      el.addEventListener('click', () => {
+        dom.searchQuery.value = el.textContent;
+        dom.aiSuggestBox.innerHTML = '';
+      });
+    });
+  });
+}
+
+function updateAISuggestUI() {
+  const cat = state.categories[state.activeCategory];
+  if (dom.aiSuggestBtn && dom.aiSuggestBox) {
+    if (cat && cat.aiSuggest) {
+      dom.aiSuggestBtn.style.display = '';
+      dom.aiSuggestBox.style.display = '';
+      dom.aiSuggestBtn.onclick = showAISuggestions;
+    } else {
+      dom.aiSuggestBtn.style.display = 'none';
+      dom.aiSuggestBox.style.display = 'none';
+    }
+  }
+}
+
+window.addEventListener('stateUpdate', updateAISuggestUI);
+document.addEventListener('DOMContentLoaded', updateAISuggestUI);
 
 // Utility function for debouncing
 function debounce(func, wait) {

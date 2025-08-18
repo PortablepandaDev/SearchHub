@@ -186,6 +186,11 @@
                     <div id="searchSuggestions" class="hidden absolute w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
                         <!-- Suggestions will be populated here -->
                     </div>
+                    <!-- AI Suggestion Button and Box -->
+                    <div class="absolute right-0 top-0 flex items-center gap-2 z-30">
+                        <button id="aiSuggestBtn" type="button" class="ml-2 px-3 py-1 rounded bg-purple-700 text-white text-xs hover:bg-purple-800" style="display:none;">💡 AI Suggest</button>
+                    </div>
+                    <div id="aiSuggestBox" class="absolute left-0 mt-12 w-full max-w-md bg-gray-900 border border-gray-700 rounded shadow-lg p-2 z-40" style="display:none;"></div>
                 </div>
                 <div class="flex flex-col gap-1">
                     <input type="date" id="afterDate" class="px-2 py-1 rounded text-xs border border-gray-700" placeholder="After" />

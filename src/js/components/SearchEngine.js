@@ -55,29 +55,25 @@ export class SearchEngine {
     
     attachEventListeners() {
         if (!this.dom.engineChips) return;
-        
-        // Listen for engine selection changes
-        this.dom.engineChips.addEventListener('change', (e) => {
-            if (e.target.matches('.engine-chip-checkbox')) {
-                const engineKey = e.target.dataset.engine;
-                this.toggleEngine(engineKey);
-                
-                // Update the associated chip
-                const chip = e.target.nextElementSibling;
-                if (chip) {
-                    chip.classList.toggle('active', this.state.selectedEngines.includes(engineKey));
-                }
-            }
-        });
-        
-        // Click on chip label also toggles checkbox
+        // Remove any previous listeners (by replacing the node)
+        const oldNode = this.dom.engineChips;
+        const newNode = oldNode.cloneNode(true);
+        oldNode.parentNode.replaceChild(newNode, oldNode);
+        this.dom.engineChips = newNode;
+
+        // Event delegation for engine selection
         this.dom.engineChips.addEventListener('click', (e) => {
+            const checkbox = e.target.closest('.engine-chip-checkbox');
+            if (checkbox) {
+                const engineKey = checkbox.dataset.engine;
+                this.toggleEngine(engineKey);
+                return;
+            }
             const chip = e.target.closest('.engine-chip');
             if (chip && !chip.classList.contains('dragging')) {
                 const checkbox = chip.parentElement.querySelector('.engine-chip-checkbox');
                 if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                    this.toggleEngine(checkbox.dataset.engine);
                 }
             }
         });
@@ -166,8 +162,8 @@ export class SearchEngine {
             } 
         }));
 
-        // Re-render the UI
-        this.render();
+    // Re-render the UI
+    this.render();
     }
     
     async handleSearch() {
