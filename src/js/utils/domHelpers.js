@@ -23,33 +23,41 @@ export function createSvgIcon(path, width = 24, height = 24) {
 
 export function historyRow(item, index) {
   const row = document.createElement('div');
-  row.className = 'bg-gray-800 p-2 rounded-md flex justify-between items-center text-sm';
+  row.className = 'bg-gray-800 p-2 rounded-md flex justify-between items-center text-sm mb-2';
 
+  const left = document.createElement('div');
+  left.className = 'flex-1 flex flex-col';
   const link = document.createElement('a');
   link.href = item.url;
-  link.target = '_blank';
   link.rel = 'noopener noreferrer';
-  link.className = 'truncate hover:text-blue-400 flex-1 mr-2';
+  link.className = 'truncate hover:text-blue-400';
   link.title = item.query;
   link.textContent = item.query;
+  left.appendChild(link);
 
-  const btn = document.createElement('button');
-  btn.title = 'Add to Favorites';
-  btn.dataset.index = index;
-  btn.className = 'add-fav-btn icon-btn p-1 rounded-full';
-  
-  // Star icon
-  btn.appendChild(createSvgIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'));
+  // Tags
+  if (item.tags && item.tags.length) {
+    const tagsDiv = document.createElement('div');
+    tagsDiv.className = 'flex flex-wrap gap-1 mt-1';
+    item.tags.forEach(tag => {
+      const tagBtn = document.createElement('button');
+      tagBtn.className = 'bg-gray-700 text-xs text-yellow-300 rounded px-2 py-0.5 hover:bg-yellow-600 hover:text-white';
+      tagBtn.textContent = `#${tag}`;
+      tagBtn.addEventListener('click', () => {
+        // Quick-jump to tag filter
+        const event = new CustomEvent('setHistoryTagFilter', { detail: tag });
+        window.dispatchEvent(event);
+      });
+      tagsDiv.appendChild(tagBtn);
+    });
+    left.appendChild(tagsDiv);
+  }
 
-  const right = document.createElement('div');
-  right.className = 'flex items-center gap-1';
-  
   const when = document.createElement('span');
   when.className = 'text-gray-500 text-xs whitespace-nowrap hidden md:inline';
   when.textContent = ` · ${new Date(item.date).toLocaleString()}`;
 
-  right.append(when, btn);
-  row.append(link, right);
+  row.append(left, when);
   return row;
 }
 

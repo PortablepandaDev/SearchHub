@@ -7,17 +7,17 @@ export function renderFavorites(state, dom) {
   while (dom.favoritesContainer.firstChild) {
     dom.favoritesContainer.removeChild(dom.favoritesContainer.firstChild);
   }
-
-  if (!state.searchFavorites.length) {
+  const collection = state.activeFavoritesCollection || 'Default';
+  const favorites = (state.searchFavorites && state.searchFavorites[collection]) || [];
+  if (!favorites.length) {
     const empty = document.createElement('p');
     empty.className = 'text-gray-500';
     empty.textContent = 'Star ★ items from your history to save them here.';
     dom.favoritesContainer.appendChild(empty);
     return;
   }
-
   // Add each favorite item
-  state.searchFavorites.forEach((item, index) => {
+  favorites.forEach((item, index) => {
     dom.favoritesContainer.appendChild(favoriteRow(item, index));
   });
 }
@@ -37,16 +37,38 @@ export function renderHistory(state, dom) {
     dom.historyContainer.removeChild(dom.historyContainer.firstChild);
   }
 
-  if (!state.searchHistory.length) {
+  // Tag filter UI
+  const filterDiv = document.createElement('div');
+  filterDiv.className = 'mb-2 flex gap-2 items-center';
+  const filterInput = document.createElement('input');
+  filterInput.type = 'text';
+  filterInput.placeholder = 'Filter by tag (e.g. #osint)';
+  filterInput.value = state.historyTagFilter || '';
+  filterInput.className = 'w-full px-2 py-1 rounded text-xs border border-gray-700 bg-gray-900 text-gray-200';
+  filterInput.addEventListener('input', (e) => {
+    state.updateState({ historyTagFilter: e.target.value });
+    renderHistory(state, dom);
+  });
+  filterDiv.appendChild(filterInput);
+  dom.historyContainer.appendChild(filterDiv);
+
+  // Filter history by tag
+  let filtered = state.searchHistory;
+  const tag = (state.historyTagFilter || '').replace(/^#/, '').toLowerCase();
+  if (tag) {
+    filtered = filtered.filter(item => (item.tags || []).some(t => t.toLowerCase().includes(tag)));
+  }
+
+  if (!filtered.length) {
     const empty = document.createElement('p');
     empty.className = 'text-gray-500';
-    empty.textContent = 'Your recent searches will appear here.';
+    empty.textContent = 'No search history yet.';
     dom.historyContainer.appendChild(empty);
     return;
   }
 
   // Add each history item
-  state.searchHistory.forEach((item, index) => {
+  filtered.forEach((item, index) => {
     dom.historyContainer.appendChild(historyRow(item, index));
   });
 }

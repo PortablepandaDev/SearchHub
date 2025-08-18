@@ -61,7 +61,9 @@ const dom = {
 const state = {
   selectedEngines: safeGet('selectedEngines', ['google']),
   searchHistory: safeGet('searchHistory', []),
-  searchFavorites: safeGet('searchFavorites', []),
+  // Favorites collections: { [collectionName]: [favorite, ...] }
+  searchFavorites: safeGet('searchFavorites', null) || { "Default": safeGet('searchFavorites', []) },
+  activeFavoritesCollection: safeGet('activeFavoritesCollection', 'Default'),
   templates: safeGet('templates', []),
   isSearching: false,
   isSafeMode: safeGet('isSafeMode', true),
@@ -78,6 +80,8 @@ const state = {
     if (updates.activeEngine) safeSet('activeEngine', updates.activeEngine);
     if (updates.activeCategory) safeSet('activeCategory', updates.activeCategory);
     if (updates.isSafeMode !== undefined) safeSet('isSafeMode', updates.isSafeMode);
+    if (updates.searchFavorites) safeSet('searchFavorites', updates.searchFavorites);
+    if (updates.activeFavoritesCollection) safeSet('activeFavoritesCollection', updates.activeFavoritesCollection);
     // Notify listeners
     window.dispatchEvent(new CustomEvent('stateUpdate', { detail: updates }));
   },
