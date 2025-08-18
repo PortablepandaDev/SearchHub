@@ -28,14 +28,14 @@ export const searchCategories = {
   },
   code: { name: 'Code Repos', icon: 'code-slash-outline', description: "Search for code across major repositories.", placeholder: "e.g., user authentication", baseQuery: 'site:github.com | site:gitlab.com | site:bitbucket.org', options: [] },
   snippets: {
-    name: 'Code Snippets', icon: 'document-text-outline', description: "Search for code snippets, notes, and leaked credentials.", placeholder: "e.g., database password", baseQuery: '', optionsType: 'radio',
+    name: 'Code Snippets', icon: 'document-text-outline', description: "Search for code snippets, notes, and leaked credentials.", placeholder: "e.g., database password", baseQuery: '', optionsType: 'radio', aiSuggest: true,
     options: [
       { label: "GitHub Gists", value: "site:gist.github.com", checked: true, description: "Find public code snippets and notes on GitHub Gist.", placeholder: "e.g., aws secret key" },
       { label: "Pastebin", value: "site:pastebin.com", description: "Search for leaked credentials and other sensitive text.", placeholder: "e.g., password dump" }
     ]
   },
   intelligence: {
-    name: 'Intelligence', icon: 'earth-outline', description: "Perform advanced OSINT and reconnaissance searches.", placeholder: "e.g., example.com", baseQuery: '', optionsType: 'radio',
+    name: 'Intelligence', icon: 'earth-outline', description: "Perform advanced OSINT and reconnaissance searches.", placeholder: "e.g., example.com", baseQuery: '', optionsType: 'radio', aiSuggest: true,
     options: [
       { label: "Find Subdomains", value: "site:*.", isDomainTarget: true, checked: true, description: "Enter a domain (e.g., example.com) to find its subdomains.", placeholder: "e.g., google.com" },
       { label: "Wayback Machine", value: "wayback", isCustomHandler: true, description: "View historical snapshots of a website.", placeholder: "e.g., example.com" },

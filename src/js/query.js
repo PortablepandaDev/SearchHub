@@ -77,7 +77,25 @@ const engineAdaptations = {
 export function adaptQueryForEngine(query, engineKey = 'google') {
   const adaptations = engineAdaptations[engineKey] || engineAdaptations.google;
   
-  // Replace generic operators with engine-specific ones
+  // Special handling for Google to preserve parentheses in file type groups
+  if (engineKey === 'google') {
+    // Don't modify parenthesized file type groups
+    const parts = query.split(/(\([^)]+\))/);
+    return parts.map(part => {
+      if (part.startsWith('(') && part.endsWith(')')) {
+        return part; // Keep parenthesized groups intact
+      }
+      // Apply adaptations to non-parenthesized parts
+      return part
+        .replace(/filetype:/g, adaptations.fileType)
+        .replace(/site:/g, adaptations.site)
+        .replace(/inurl:/g, adaptations.inUrl)
+        .replace(/intitle:/g, adaptations.inTitle)
+        .replace(/ OR /g, adaptations.or);
+    }).join('');
+  }
+  
+  // For other engines, apply adaptations normally
   return query
     .replace(/filetype:/g, adaptations.fileType)
     .replace(/site:/g, adaptations.site)
@@ -108,20 +126,72 @@ export function buildQueryString(state, dom) {
   else if (category.options?.length > 0) {
     const selected = category.options.find(opt => opt.checked) || category.options[0];
     if (selected) {
-      if (selected.isDomainTarget) {
+      if (selected.isDomainTarget && userQuery) {
         // Use subdomainQuery for subdomain searches
         optionsQuery = subdomainQuery(userQuery);
       } else if (selected.isCustomHandler) {
         optionsQuery = userQuery;
       } else {
-        optionsQuery = selected.value;
+        // For site: operators, don't duplicate them
+        optionsQuery = selected.value || '';
       }
     }
   }
 
-  // Combine with user input and decorations
+  // Build the final query
+  let queryParts = [];
+
+  // Common web page extensions to exclude
+  const EXCLUDE_EXTENSIONS = ['-html', '-htm', '-php', '-asp', '-jsp', '-cfm'];
+  
+  // Media file types to search for
+  const MEDIA_TYPES = {
+    audio: ['mp3', 'flac', 'm4a', 'opus', 'wav', 'aac', 'ogg', 'wma'],
+    video: ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv'],
+    document: ['pdf', 'doc', 'docx', 'txt', 'rtf']
+  };
+
+  // Extract file type hints and clean up query
+  let fileTypes = [];
+  let searchTerms = userQuery;
+  
+  // Check for explicit extensions in query
+  const fileTypeMatch = userQuery.match(/\.(mp3|flac|m4a|opus|wav|aac|ogg|wma|mp4|avi|mkv)(?:\s|$)/gi);
+  if (fileTypeMatch) {
+    fileTypes = fileTypeMatch.map(ft => ft.substring(1).toLowerCase());
+    // Remove the extensions from search terms
+    searchTerms = userQuery.replace(/\.(mp3|flac|m4a|opus|wav|aac|ogg|wma|mp4|avi|mkv)(?:\s|$)/gi, ' ').trim();
+  }
+
+  // If no specific types found but we're in file search mode, add default audio types
+  if (fileTypes.length === 0 && state.activeCategory === 'file_search') {
+    fileTypes = MEDIA_TYPES.audio;
+  }
+
+  // Handle site: operator queries
+  if (optionsQuery.includes('site:')) {
+    queryParts.push(optionsQuery);
+  }
+
+  // Add the search terms
+  if (searchTerms) {
+    queryParts.push(searchTerms);
+  }
+
+  // Add file type conditions
+  if (fileTypes.length > 0) {
+    queryParts.push(`(${fileTypes.join('|')})`);
+  }
+
+  // Add directory listing indicators
+  queryParts.unshift('intitle:"index of" "parent directory"');
+
+  // Add exclusions to filter out web pages
+  queryParts.push(...EXCLUDE_EXTENSIONS);
+
+  // Combine with decorations
   const decorated = decorateQueryWithTerms(
-    [baseQuery, optionsQuery, optionsQuery ? '' : userQuery].filter(Boolean).join(' '),
+    queryParts.filter(Boolean).join(' '),
     dom.includeTerms?.value?.split(',') || [],
     dom.excludeTerms?.value?.split(',') || [],
     dom.exactPhrases?.checked || false

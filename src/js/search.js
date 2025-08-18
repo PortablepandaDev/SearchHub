@@ -1,24 +1,18 @@
-import { searchEngines } from './engines.js';
-import { withDateFilter } from './query.js';
 import { ENGINE, buildURL } from './engineMap.js';
 
 // Search and copy logic
-export function handleSearch(state, dom, buildQueryString, addToHistory, showToast) {
+export async function handleSearch(state, dom, buildQueryString, addToHistory, showToast) {
   try {
+    // Check if we have selected engines
+    if (!state.selectedEngines?.length) {
+      showToast && showToast('No search engine selected', 'error');
+      return { success: false, error: 'No engine selected' };
+    }
+    
     const query = buildQueryString(state, dom);
     if (!query) {
       showToast && showToast('Please enter a search query', 'error');
       return { success: false, error: 'No query provided' };
-    }
-
-    // Make sure we have engines selected
-    const engines = state.selectedEngines.length ? state.selectedEngines : ['google'];
-    if (engines.length === 0) {
-      showToast && showToast('No search engine selected', 'error');
-      return { success: false, error: 'No engines selected' };
-    }
-    if (engines.length > 1) {
-      showToast && showToast('Multiple engines: Your browser may block pop-ups. Allow pop-ups for best results.', 'warning');
     }
 
     // Custom handler for Wayback Machine
@@ -44,7 +38,11 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
             return { success: false, error: 'Invalid domain' };
           }
           const url = `https://web.archive.org/web/*/${encodeURIComponent(domain)}`;
-          window.open(url, '_blank', 'noopener,noreferrer');
+          const opened = window.open(url, '_blank', 'noopener,noreferrer');
+          if (!opened) {
+            showToast && showToast('Popup blocked. Please allow popups for this site.', 'error');
+            return { success: false, error: 'Popup blocked' };
+          }
           if (addToHistory) {
             addToHistory(
               { query: input, url, date: new Date().toISOString() },
@@ -53,7 +51,7 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
             );
           }
           showToast && showToast('Wayback Machine opened!', 'success');
-          return { success: true, urls: [url] };
+          return { success: true, url };
         } catch (err) {
           showToast && showToast('Invalid URL', 'error');
           return { success: false, error: 'Invalid URL' };
@@ -61,75 +59,59 @@ export function handleSearch(state, dom, buildQueryString, addToHistory, showToa
       }
     }
 
-    // Track opened URLs for returning
-    const urls = [];
-
-    // Open each engine in a new tab using ENGINE/buildURL
-  const promises = engines.map((engineKey, idx) => 
-    new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (!ENGINE[engineKey]) {
-          console.error(`Engine ${engineKey} not found`);
-          reject(new Error(`Engine ${engineKey} not found`));
-          return;
-        }
-        
-        try {
-          const after = dom.afterDateInput?.value || '';
-          const before = dom.beforeDateInput?.value || '';
-          const filteredQuery = buildQueryString(state, dom);
-          const url = buildURL(engineKey, filteredQuery, after, before);
-          const opened = window.open(url, '_blank', 'noopener,noreferrer');
-          
-          if (!opened) {
-            reject(new Error('Popup blocked'));
-            return;
-          }
-
-          urls.push(url);
-
-          // Only add the first to history
-          if (addToHistory && engineKey === engines[0]) {
-            addToHistory(
-              { query: filteredQuery, url, date: new Date().toISOString() },
-              state,
-              () => {}
-            );
-          }
-
-          resolve(url);
-        } catch (err) {
-          reject(err);
-        }
-      }, idx * 300); // 300ms delay between tabs
-    })
-  );
-
-  // Wait for all engines to open
-  Promise.allSettled(promises).then(results => {
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
+    // Standard search flow
+    const after = dom.afterDateInput?.value || '';
+    const before = dom.beforeDateInput?.value || '';
     
-    if (successful === 0) {
-      showToast && showToast('Failed to open searches. Please check popup blocker.', 'error');
-    } else if (failed > 0) {
-      showToast && showToast(`Opened ${successful} of ${engines.length} searches. Some were blocked.`, 'warning');
-    } else {
-      showToast && showToast('Search started!', 'success');
+    // Open a tab for each selected engine
+    let openedCount = 0;
+    const urls = [];
+    
+    for (const engineKey of state.selectedEngines) {
+      if (!ENGINE[engineKey]) continue;
+      
+      const url = buildURL(engineKey, query, after, before);
+      const opened = window.open(url, '_blank', 'noopener,noreferrer');
+      if (opened) {
+        openedCount++;
+        urls.push(url);
+      }
+      
+      // Small delay between tabs to prevent browser blocking
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
-  });
+    
+    if (openedCount === 0) {
+      showToast && showToast('Popup blocked. Please allow popups for this site.', 'error');
+      return { success: false, error: 'Popup blocked' };
+    }
 
+    // Add to history only if all tabs opened successfully
+    if (addToHistory && openedCount === state.selectedEngines.length) {
+      addToHistory(
+        { query, urls, engines: [...state.selectedEngines], date: new Date().toISOString() },
+        state,
+        () => {}
+      );
+    }
+
+    const message = `Opened ${openedCount} search tab${openedCount > 1 ? 's' : ''}!`;
+    showToast && showToast(message, 'success');
     return { success: true, urls };
   } catch (error) {
     console.error('Search failed:', error);
-    showToast && showToast('Search failed', 'error');
-
+    showToast && showToast('Search failed: ' + error.message, 'error');
     return { success: false, error: error.message };
   }
 }
 
 export function handleCopy(state, dom, buildQueryString, showToast) {
   const q = buildQueryString(state, dom);
-  if (!q) return showToast && showToast('Nothing to copy. Build a query first.', 'error');
-  navigator.clipboard.writeText(q).then(() => showToast && showToast('Copied to clipboard!', 'success')).catch(() => showToast && showToast('Failed to copy.', 'error'));
+  if (!q) {
+    showToast && showToast('Nothing to copy. Build a query first.', 'error');
+    return;
+  }
+  navigator.clipboard.writeText(q)
+    .then(() => showToast && showToast('Copied to clipboard!', 'success'))
+    .catch(() => showToast && showToast('Failed to copy.', 'error'));
 }

@@ -79,7 +79,7 @@ export const searchEngines = {
 export function renderEngines(state, dom, _updateCheatsheet, updateSearchBtnLabel, renderPreview) {
   dom.engineChips.innerHTML = '';
   Object.keys(searchEngines).forEach(key => {
-    const selected = state.selectedEngines.includes(key);
+    const selected = key === state.activeEngine;
     const btn = document.createElement('button');
     btn.className = `engine-chip search-engine-tab border border-gray-700 rounded-full px-3 py-1 text-sm ${selected ? 'active' : ''}`;
     btn.setAttribute('aria-pressed', selected);
@@ -87,17 +87,14 @@ export function renderEngines(state, dom, _updateCheatsheet, updateSearchBtnLabe
     btn.addEventListener('click', () => toggleEngine(key, state, dom, renderEngines, _updateCheatsheet, updateSearchBtnLabel, renderPreview));
     dom.engineChips.appendChild(btn);
   });
-  // updateCheatsheet();
   updateSearchBtnLabel();
 }
 
 export function toggleEngine(key, state, dom, renderEngines, _updateCheatsheet, updateSearchBtnLabel, renderPreview) {
-  const idx = state.selectedEngines.indexOf(key);
-  if (idx >= 0) {
-    state.selectedEngines.splice(idx, 1);
-  } else {
-    state.selectedEngines.push(key);
-  }
+  // Set the active engine
+  state.activeEngine = key;
+  // Keep selectedEngines in sync for backwards compatibility
+  state.selectedEngines = [key];
   // Always keep at least one engine selected
   if (state.selectedEngines.length === 0) {
     state.selectedEngines = [key];

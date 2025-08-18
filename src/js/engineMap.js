@@ -96,5 +96,18 @@ export const ENGINE = {
 
 export function buildURL(engineKey, query, after, before) {
   const e = ENGINE[engineKey];
-  return e.base + encodeURIComponent(query) + (e.date(after, before) || '');
+  
+  // For Google-like engines, convert spaces to + and preserve special characters
+  const googleLike = ['google', 'scholar', 'youtube'];
+  let encodedQuery;
+  
+  if (googleLike.includes(engineKey)) {
+    // Replace spaces with + but don't encode special characters like quotes and parentheses
+    encodedQuery = query.replace(/\s+/g, '+');
+  } else {
+    // For other engines, use full URL encoding
+    encodedQuery = encodeURIComponent(query);
+  }
+  
+  return e.base + encodedQuery + (e.date(after, before) || '');
 }

@@ -13,6 +13,7 @@ import { handleSearch, handleCopy } from './search.js';
 import { registerEventListeners } from './events.js';
 import { safeGet, safeSet, showToast } from './utils.js';
 import { buildQueryString, adaptQueryForEngine } from './query.js';
+import { ENGINE, buildURL } from './engineMap.js';
 import { DorkLibrary } from './components/DorkLibrary.js';
 import { QuerySuggester } from './components/QuerySuggester.js';
 import { GitHubSearch } from './components/GitHubSearch.js';
@@ -33,6 +34,8 @@ const dom = {
   optionsContainer: document.getElementById('optionsContainer'),
   searchQuery: document.getElementById('searchQuery'),
   searchButton: document.getElementById('searchButton'),
+  aiSuggestBtn: document.getElementById('aiSuggestBtn'),
+  aiSuggestBox: document.getElementById('aiSuggestBox'),
   copyButton: document.getElementById('copyButton'),
   afterDateInput: document.getElementById('afterDate'),
   beforeDateInput: document.getElementById('beforeDate'),
@@ -187,6 +190,11 @@ async function init() {
     
     // Set up SafeMode toggle
     if (dom.safeModeToggle) {
+      // Initialize toggle state
+      const initialIsSafe = state.isSafeMode;
+      dom.safeModeToggle.classList.toggle('bg-green-500', initialIsSafe);
+      dom.safeModeToggle.classList.toggle('bg-gray-500', !initialIsSafe);
+
       dom.safeModeToggle.addEventListener('click', () => {
         const isSafe = state.toggleSafeMode();
         dom.safeModeToggle.classList.toggle('bg-green-500', isSafe);
@@ -216,11 +224,28 @@ async function init() {
     }
     
     // Handler for search operations
-    const performSearch = async () => {
+    const performSearch = async (triggerSource) => {
+      console.log('Search triggered from:', triggerSource);
       if (!dom.searchQuery?.value) {
         showToast('Please enter a search query', 'error');
         return;
       }
+
+      // Guard against rapid repeated triggers of the same search
+      const searchKey = `${dom.searchQuery.value}_${state.selectedEngines.join(',')}`;
+      const now = Date.now();
+      if (state.lastSearchKey === searchKey && state.lastSearchTime && (now - state.lastSearchTime) < 1000) {
+        console.log('Search prevented - duplicate search detected');
+        return;
+      }
+      state.lastSearchKey = searchKey;
+      state.lastSearchTime = now;
+
+      if (state.isSearching) {
+        console.log('Search prevented - already searching');
+        return;
+      }
+      
       dom.searchButton.disabled = true;
       state.isSearching = true;
       try {
@@ -231,20 +256,32 @@ async function init() {
       } finally {
         state.isSearching = false;
         dom.searchButton.disabled = false;
+        // Allow the next different search immediately, but prevent duplicates for 1 second
+        setTimeout(() => {
+          if (state.lastSearchKey === searchKey) {
+            state.lastSearchKey = null;
+            state.lastSearchTime = 0;
+          }
+        }, 1000);
       }
     };
 
-    // Register core event listeners
+    // Set up search button click handler
+    if (dom.searchButton) {
+      dom.searchButton.addEventListener('click', () => performSearch('search-button'));
+    }
+    // Set up run preview button click handler
+    if (dom.runPreviewBtn) {
+      dom.runPreviewBtn.addEventListener('click', () => performSearch('preview-button'));
+    }
+
+    // Register other event listeners
     registerEventListeners(state, dom, {
-      handleSearch: performSearch,
       handleCopy: () => handleCopy(state, dom, buildQueryString, showToast),
       handlePreview: () => renderPreview(state, dom, buildQueryString),
       saveTemplate: () => saveTemplate(state, dom, getCurrentConfig, renderTemplates, showToast),
       deleteTemplate: () => deleteTemplate(state, dom, renderTemplates, showToast),
     });
-
-    // Listen for search events from components
-    window.addEventListener('search', performSearch);
 
     // Update initial button states
     updateSearchBtnLabel();
@@ -259,9 +296,10 @@ async function init() {
       });
 
       // Add keyboard shortcut
-      dom.searchQuery.addEventListener('keyup', (e) => {
+      dom.searchQuery.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
-          handleSearch(state, dom, buildQueryString, addToHistory, showToast);
+          e.preventDefault(); // Prevent the keyup event
+          performSearch('enter-key');
         }
       });
     }
@@ -326,6 +364,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Ensure AI Suggest button and box are assigned
   dom.aiSuggestBtn = document.getElementById('aiSuggestBtn');
   dom.aiSuggestBox = document.getElementById('aiSuggestBox');
+  
+  // Add click outside handler for AI suggest box
+  document.addEventListener('click', (e) => {
+    if (dom.aiSuggestBox && dom.aiSuggestBtn) {
+      if (!dom.aiSuggestBox.contains(e.target) && !dom.aiSuggestBtn.contains(e.target)) {
+        dom.aiSuggestBox.style.display = 'none';
+      }
+    }
+  });
+  
   init();
 });
 
@@ -491,14 +539,22 @@ async function generatePreviews(urls) {
 function showAISuggestions() {
   const query = dom.searchQuery.value.trim();
   const category = state.activeCategory;
+  
+  // Show the suggestions box
+  dom.aiSuggestBox.style.display = 'block';
   dom.aiSuggestBox.innerHTML = '<div class="text-gray-400 text-xs">Thinking...</div>';
+  
   aiSuggester.suggest(query, category).then(suggestions => {
+    if (suggestions.length === 0) {
+      dom.aiSuggestBox.innerHTML = '<div class="text-gray-400 text-xs p-2">No suggestions available</div>';
+      return;
+    }
     dom.aiSuggestBox.innerHTML = suggestions.map(s => `<div class="ai-suggestion cursor-pointer hover:bg-blue-700 p-2 rounded">${s}</div>`).join('');
     // Click to insert suggestion
     Array.from(dom.aiSuggestBox.querySelectorAll('.ai-suggestion')).forEach(el => {
       el.addEventListener('click', () => {
         dom.searchQuery.value = el.textContent;
-        dom.aiSuggestBox.innerHTML = '';
+        dom.aiSuggestBox.style.display = 'none';
       });
     });
   });
@@ -507,11 +563,12 @@ function showAISuggestions() {
 function updateAISuggestUI() {
   const cat = state.categories[state.activeCategory];
   if (dom.aiSuggestBtn && dom.aiSuggestBox) {
-    if (cat && cat.aiSuggest) {
+    if (!cat || cat.aiSuggest) {
+      // Show button if no category selected or category has aiSuggest enabled
       dom.aiSuggestBtn.style.display = '';
-      dom.aiSuggestBox.style.display = '';
       dom.aiSuggestBtn.onclick = showAISuggestions;
     } else {
+      // Hide both button and box for other categories
       dom.aiSuggestBtn.style.display = 'none';
       dom.aiSuggestBox.style.display = 'none';
     }

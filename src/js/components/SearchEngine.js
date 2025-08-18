@@ -116,8 +116,6 @@ export class SearchEngine {
             this.render();
         });
 
-        this.dom.searchButton.addEventListener('click', () => this.handleSearch());
-
         // Add tooltip/info icon if not already present
         if (!this.dom.searchButtonTooltip) {
             let tooltipIcon = document.getElementById('searchButtonTooltip');
@@ -127,7 +125,7 @@ export class SearchEngine {
                 tooltipIcon.innerHTML = '🛈';
                 tooltipIcon.style.cursor = 'pointer';
                 tooltipIcon.style.marginLeft = '8px';
-                tooltipIcon.title = 'Tip: If only one tab opens, your browser is blocking popups.\nAllow popups for this site to use multi-engine search.';
+                tooltipIcon.title = 'Click to search using the selected engine';
                 this.dom.searchButton.parentElement.appendChild(tooltipIcon);
             }
             this.dom.searchButtonTooltip = tooltipIcon;
@@ -164,60 +162,5 @@ export class SearchEngine {
 
     // Re-render the UI
     this.render();
-    }
-    
-    async handleSearch() {
-        const query = this.dom.searchQueryInput.value.trim();
-        if (!query) {
-            showToast('Please enter a search query', 'error');
-            return;
-        }
-
-        // Get selected engines from the current state
-        const selectedEngines = Array.from(this.state.selectedEngines || []);
-        if (selectedEngines.length === 0) {
-            showToast('No search engine selected', 'error');
-            return;
-        }
-
-
-        // Engine-specific query encoding
-        function buildEngineUrl(engine, query) {
-            // For Google, DuckDuckGo, Bing, etc., preserve advanced syntax
-            if (["google", "duckduckgo", "bing", "scholar", "arxiv", "pubmed", "stackoverflow", "github", "npm", "pypi", "mdn", "youtube"].includes(engine.icon)) {
-                // Replace spaces with +, but keep quotes and operators
-                const q = query.replace(/ /g, "+");
-                return engine.url + q;
-            }
-            // Fallback: encodeURIComponent
-            return engine.url + encodeURIComponent(query);
-        }
-
-        const searchUrls = selectedEngines
-            .map(key => searchEngines[key])
-            .filter(engine => engine)
-            .map(engine => buildEngineUrl(engine, query));
-
-        // Synchronously open all windows in direct response to the click
-        let openedCount = 0;
-        for (let i = 0; i < searchUrls.length; i++) {
-            try {
-                const win = window.open(searchUrls[i], '_blank', 'noopener,noreferrer');
-                if (win) {
-                    openedCount++;
-                }
-            } catch (err) {
-                // Ignore
-            }
-        }
-
-        if (openedCount > 0) {
-            showToast(`Opened ${openedCount} search engine${openedCount > 1 ? 's' : ''}`, 'success');
-            if (this.state.addToHistory) {
-                this.state.addToHistory(query);
-            }
-        } else {
-            showToast('Please allow popups to open multiple searches', 'warning');
-        }
     }
 }

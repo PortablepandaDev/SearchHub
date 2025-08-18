@@ -23,9 +23,10 @@ export function renderFavorites(state, dom) {
 }
 
 export function addToHistory(item, state, renderHistory) {
-  if (!state.searchHistory.some(h=> h.query===item.query)) {
+  // Check for exact duplicates (same query and URL)
+  if (!state.searchHistory.some(h => h.query === item.query && h.url === item.url)) {
     state.searchHistory.unshift(item);
-    if (state.searchHistory.length>50) state.searchHistory.pop();
+    if (state.searchHistory.length > 50) state.searchHistory.pop();
     safeSet('searchHistory', state.searchHistory);
     renderHistory();
   }
