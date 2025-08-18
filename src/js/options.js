@@ -1,6 +1,14 @@
 // Options panel logic
 export function renderOptions(key, state, dom, buildQueryString, renderPreview, checkSearchButtonState) {
+
   const category = state.categories[key];
+  // Hide options for unsafe categories in Safe Mode
+  if (state.isSafeMode && category.isSafe === false) {
+    dom.optionsTitle.textContent = `2. Options for ${category.name}`;
+    dom.optionsDescription.textContent = category.description;
+    dom.optionsContainer.innerHTML = '<p class="text-yellow-400">This category is hidden in Safe Mode for your protection.</p>';
+    return;
+  }
   dom.optionsTitle.textContent = `2. Options for ${category.name}`;
   dom.optionsDescription.textContent = category.description;
   dom.searchQuery.placeholder = category.placeholder || 'Enter your search query...';
